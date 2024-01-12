@@ -85,32 +85,51 @@ def main():
     # Seleccionar el número de coche desde un selectbox
     coche = st.selectbox("Seleccione número de coche:", numeros_colectivos)
 
-    # Obtiene el horario de Argentina
-    fecha_hora_actual = obtener_fecha_argentina()
-
     fecha = obtener_fecha_argentina().strftime(formato_fecha)
 
     hora = obtener_fecha_argentina().strftime(formato_hora)
 
-    contadorLitrosInicio = st.number_input('Ingrese la cantidad inicial de litros de combustible en el contador')
+    contadorLitrosInicio = st.number_input('Ingrese la cantidad inicial de litros de combustible en el contador', min_value=0, value=0, step=1)
 
-    contadorLitrosCierre = st.number_input('Ingrese la cantidad final de litros de combustible en el contador')
+    contadorLitrosCierre = st.number_input('Ingrese la cantidad final de litros de combustible en el contador', min_value=0, value=0, step=1)
 
-    litrosCargados = st.number_input('Ingrese la cantidad de litros cargados')
+    litrosCargados = st.number_input('Ingrese la cantidad de litros cargados', min_value=0, value=0, step=1)
 
-    numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo')
+    numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo', min_value=0, value=0, step=1)
 
-    numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo')
+    numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo', min_value=0, value=0, step=1)
 
     comentario = st.text_input('Ingrese un comentario, si se desea')
 
-    litrosTanqueInicioDia = st.number_input('Ingrese los litros del tanque al comienzo del día')
+    litrosTanqueInicioDia = st.number_input('Ingrese los litros del tanque al comienzo del día', min_value=0, value=0, step=1)
 
-    ingresoGasoil = st.number_input('Ingrese los litros de Gas Oil que se cargaron en el tanque')
+    ingresoGasoil = st.number_input('Ingrese los litros de Gas Oil que se cargaron en el tanque', min_value=0, value=0, step=1)
 
-    litrosTanqueFinDia = st.number_input('Ingrese los litros del tanque al final del día')
+    litrosTanqueFinDia = st.number_input('Ingrese los litros del tanque al final del día', min_value=0, value=0, step=1)
 
-    litrosTotalesCargadosDia = st.number_input('Ingrese los litros totales cargados en el día')
+    litrosTotalesCargadosDia = st.number_input('Ingrese los litros totales cargados en el día', min_value=0, value=0, step=1)
+
+    # Crear un diccionario con la información del formulario
+    data = {
+        'coche': coche,
+        'fecha': fecha,
+        'hora': hora,
+        'contadorLitrosInicio': contadorLitrosInicio,
+        'contadorLitrosCierre': contadorLitrosCierre,
+        'litrosCargados': litrosCargados,
+        'numeroPrecintoViejo': numeroPrecintoViejo,
+        'numeroPrecintoNuevo': numeroPrecintoNuevo,
+        'litrosTanqueInicioDia': litrosTanqueInicioDia,
+        'ingresoGasoil': ingresoGasoil,
+        'litrosTanqueFinDia': litrosTanqueFinDia,
+        'litrosTotalesCargadosDia': litrosTotalesCargadosDia,
+        'comentario': comentario,
+        'usuario': usuario
+    }
+
+    if st.button('Guardar Carga de Combustible'):
+        # Llamar a la función para guardar en S3
+        guardar_carga_empresa_en_s3(data, csv_filename)
 
 if __name__ == "__main__":
     main()
