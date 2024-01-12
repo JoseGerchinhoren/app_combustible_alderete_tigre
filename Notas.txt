@@ -1,0 +1,2 @@
+Campos de input:
+coche, fecha, hora, contador litros inicio (numero), contador litros cierre (numero), litros cargados (numero), numero de precinto viejo (numero), numero de precinto nuevo (numero), nombre, litros en tanque al iniciar el dia (numero), ingreso de gas oil (numero), litros del tanque al finalizar el dia (numero), total de litros cargados en el dia (numero), observaciones (campo por si quieren agregar algo)

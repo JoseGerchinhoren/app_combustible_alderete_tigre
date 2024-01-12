@@ -3,7 +3,7 @@ import boto3
 import pandas as pd
 
 from config import cargar_configuracion
-from ingresaCombustible import main as revisionFosa
+from ingresaCombustibleEmpresa import main as revisionFosa
 from visualizaCombustible import visualizar_revisiones_en_fosa as visualizaRevisionFosa
 from ingresaUsuarios import ingresa_usuario
 from visualizaUsuarios import main as visualiza_usuarios
@@ -66,7 +66,7 @@ def logout():
 
 def main():
     st.title("T.A. Ciudad de Alderetes - T.A. El Tigre")
-    st.header("Seguimiento de Combustible")
+    st.header("Control de Combustible")
 
     if logged_in:
         st.sidebar.title("Menú")
@@ -74,24 +74,24 @@ def main():
         st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Nueva Revision en Fosa", "Visualizar Revisiones en Fosa","Nuevo Usuario", "Visualiza Usuarios"])
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible en Empresa", "Visualizar Cargas de Combustible","Nuevo Usuario", "Visualiza Usuarios"])
             if selected_option == "Nuevo Usuario":
                 ingresa_usuario()
             if selected_option == "Visualiza Usuarios":
                 visualiza_usuarios()
-            if selected_option == "Nueva Revision en Fosa":
+            if selected_option == "Carga de Combustible en Empresa":
                 revisionFosa()
-            if selected_option == "Visualizar Revisiones en Fosa":
+            if selected_option == "Visualizar Cargas de Combustible":
                 visualizaRevisionFosa()
 
             if selected_option == "Inicio":
                 texto_inicio()
 
         else:
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Nueva Revision en Fosa", "Visualizar Revisiones en Fosa"])
-            if selected_option == "Nueva Revision en Fosa":
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible en Empresa", "Visualizar Cargas de Combustible"])
+            if selected_option == "Carga de Combustible en Empresa":
                 revisionFosa()
-            if selected_option == "Visualizar Revisiones en Fosa":
+            if selected_option == "Visualizar Cargas de Combustible":
                 visualizaRevisionFosa()
             if selected_option == "Inicio":
                 texto_inicio()
