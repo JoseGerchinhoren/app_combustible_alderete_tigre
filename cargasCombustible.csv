@@ -1,0 +1,4 @@
+idCarga,coche,fecha,hora,contadorLitrosInicio,contadorLitrosCierre,litrosCargados,numeroPrecintoViejo,numeroPrecintoNuevo,comentario,usuario,lugarCarga,precio
+0,2,17/01/2024,09:57,0,0,2,1,4,aa,José,Surtidor,3
+1,1,17/01/2024,09:57,0,0,0,0,0,,José,Tanque,0
+2,1,17/01/2024,10:00,3,5,4,2,6,ccc,José,Tanque,0
