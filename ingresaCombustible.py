@@ -66,7 +66,7 @@ def guardar_carga_empresa_en_s3(data, filename):
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
         # Guardar localmente también
-        df_total.to_csv("revisiones.csv", index=False)
+        df_total.to_csv("cargasCombustible.csv", index=False)
 
         st.success("Información guardada exitosamente!")
 
@@ -88,7 +88,7 @@ def main():
         litrosCargados_surtidor = st.number_input('Ingrese la cantidad de litros cargados', min_value=0, value=0, step=1)
         precio_surtidor = st.number_input('Ingrese el precio de la carga en pesos', min_value=0, value=0, step=1)
         numeroPrecintoNuevo_surtidor = st.number_input('Ingrese el numero de precinto nuevo', min_value=0, value=0, step=1)
-        comentario = st.text_input('Ingrese un comentario, si se desea')
+        comentario_surtidor = st.text_input('Ingrese un comentario, si se desea')
 
         # Obtener fecha y hora actual en formato de Argentina
         fecha_surtidor = obtener_fecha_argentina().strftime(formato_fecha)
@@ -104,7 +104,7 @@ def main():
             'litrosCargados': litrosCargados_surtidor,
             'precio': precio_surtidor,
             'numeroPrecintoNuevo': numeroPrecintoNuevo_surtidor,
-            'comentario': comentario,
+            'comentario': comentario_surtidor,
             'usuario': usuario
         }
 
@@ -120,17 +120,23 @@ def main():
         litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=0, step=1)
         contadorLitrosCierre = st.number_input('Ingrese la cantidad final de litros de combustible en el contador ', min_value=0, value=0, step=1)
         numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo ', min_value=0, value=0, step=1)
+        comentario = st.text_input('Ingrese un comentario, si se desea ')
+
+        # Obtener fecha y hora actual en formato de Argentina
+        fecha_tanque = obtener_fecha_argentina().strftime(formato_fecha)
+        hora_tanque = obtener_fecha_argentina().strftime(formato_hora)
 
         # Crear un diccionario con la información del formulario
         data_tanque = {
             'lugarCarga': 'Tanque',
             'coche': coche_tanque,
-            'fecha': fecha_surtidor,
-            'hora': hora_surtidor,
-            'numeroPrecintoViejo': numeroPrecintoViejo_surtidor,
-            'litrosCargados': litrosCargados_surtidor,
-            'precio': precio_surtidor,
-            'numeroPrecintoNuevo': numeroPrecintoNuevo_surtidor,
+            'fecha': fecha_tanque,
+            'hora': hora_tanque,
+            'numeroPrecintoViejo': numeroPrecintoViejo,
+            'contadorLitrosInicio': contadorLitrosInicio,
+            'litrosCargados': litrosCargados,
+            'contadorLitrosCierre': contadorLitrosCierre,
+            'numeroPrecintoNuevo': numeroPrecintoNuevo,
             'comentario': comentario,
             'usuario': usuario
         }
@@ -138,7 +144,6 @@ def main():
         # Botón para realizar acciones asociadas a "Carga en Surtidor"
         if st.button('Guardar Carga de Combustible en Tanque'):
             guardar_carga_empresa_en_s3(data_tanque, csv_filename)
-        
 
     # # Configuración inicial
     # st.title("Ingresar Carga de Combustible en Empresa")

@@ -3,7 +3,7 @@ import boto3
 import pandas as pd
 
 from config import cargar_configuracion
-from ingresaCombustibleEmpresa import main as revisionFosa
+from ingresaCombustible import main as revisionFosa
 from visualizaCombustible import visualizar_revisiones_en_fosa as visualizaRevisionFosa
 from ingresaUsuarios import ingresa_usuario
 from visualizaUsuarios import main as visualiza_usuarios
