@@ -6,6 +6,7 @@ from config import cargar_configuracion
 import io
 import boto3
 from botocore.exceptions import NoCredentialsError
+from visualizaCombustible import main as visualizaCombustible
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -147,7 +148,9 @@ def main():
         # Botón para realizar acciones asociadas a "Carga en Tanque"
         if st.button('Guardar Carga de Combustible en Tanque'):
             guardar_carga_empresa_en_s3(data_tanque, csv_filename)
-
+    
+    with st.expander('Visualiza Cargas de Combustible'):
+        visualizaCombustible()
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ import pandas as pd
 
 from config import cargar_configuracion
 from ingresaCombustible import main as revisionFosa
-from visualizaCombustible import visualizar_revisiones_en_fosa as visualizaRevisionFosa
+from visualizaCombustible import main as visualizaCombustible
 from ingresaUsuarios import ingresa_usuario
 from visualizaUsuarios import main as visualiza_usuarios
 
@@ -82,7 +82,7 @@ def main():
             if selected_option == "Carga de Combustible en Empresa":
                 revisionFosa()
             if selected_option == "Visualizar Cargas de Combustible":
-                visualizaRevisionFosa()
+                visualizaCombustible()
 
             if selected_option == "Inicio":
                 texto_inicio()
@@ -92,7 +92,7 @@ def main():
             if selected_option == "Carga de Combustible en Empresa":
                 revisionFosa()
             if selected_option == "Visualizar Cargas de Combustible":
-                visualizaRevisionFosa()
+                visualizaCombustible()
             if selected_option == "Inicio":
                 texto_inicio()
 
