@@ -26,6 +26,27 @@ numeros_colectivos = [
 formato_fecha = '%d/%m/%Y'
 formato_hora = '%H:%M'
 
+def obtener_ultimo_registro_por_coche(coche, df_total):
+    """
+    Función para obtener el último registro de un coche específico.
+    Retorna el valor del número de precinto nuevo si existe, o None si no hay registros.
+    """
+    filtro_coche = df_total['coche'] == coche
+    registros_coche = df_total[filtro_coche]
+    if not registros_coche.empty:
+        ultimo_registro = registros_coche.iloc[-1]
+        return ultimo_registro['numeroPrecintoNuevo']
+    else:
+        return None
+    
+def cargar_dataframe_desde_s3():
+    # Función para cargar el DataFrame desde S3
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key=csv_filename)
+        return pd.read_csv(io.BytesIO(response['Body'].read()))
+    except s3.exceptions.NoSuchKey:
+        st.warning("No se encontró el archivo CSV en S3.")
+
 def guardar_carga_empresa_en_s3(data, filename):
     try:
         # Leer el archivo CSV desde S3 o crear un DataFrame vacío con las columnas definidas
@@ -81,6 +102,9 @@ def guardar_carga_empresa_en_s3(data, filename):
         st.error(f"Error al guardar la información: {e}")
         
 def main():
+    # Cargar el DataFrame desde S3
+    df_total = cargar_dataframe_desde_s3()
+
     st.title("Ingresar Carga de Combustible")
 
     usuario = st.session_state.user_nombre_apellido
@@ -88,7 +112,13 @@ def main():
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Carga en Surtidor'):
         coche_surtidor = st.selectbox("Seleccione número de coche:", numeros_colectivos)
-        numeroPrecintoViejo_surtidor = st.number_input('Ingrese el numero de precinto viejo', min_value=0, value=0, step=1)
+
+        # Obtén el último número de precinto nuevo para el coche seleccionado
+        ultimo_numero_precinto = obtener_ultimo_registro_por_coche(coche_surtidor, df_total)
+
+        # Muestra el campo de número de precinto viejo o utiliza el valor obtenido
+        numeroPrecintoViejo_surtidor = st.number_input('Ingrese el numero de precinto viejo', min_value=0, value=ultimo_numero_precinto or 0, step=1)
+
         litrosCargados_surtidor = st.number_input('Ingrese la cantidad de litros cargados', min_value=0, value=0, step=1)
         precio_surtidor = st.number_input('Ingrese el precio de la carga en pesos', min_value=0, value=0, step=1)
         numeroPrecintoNuevo_surtidor = st.number_input('Ingrese el numero de precinto nuevo', min_value=0, value=0, step=1)
@@ -119,10 +149,26 @@ def main():
     # Utilizando st.expander para la sección "Carga en Tanque"
     with st.expander('Carga en Tanque'):
         coche_tanque = st.selectbox("Seleccione número de coche: ", numeros_colectivos)
-        numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo ', min_value=0, value=0, step=1)
-        contadorLitrosInicio = st.number_input('Ingrese la cantidad inicial de litros de combustible en el contador ', min_value=0, value=0, step=1)
+
+        # Obtén el último número de precinto nuevo para el coche seleccionado
+        ultimo_numero_precinto = obtener_ultimo_registro_por_coche(coche_tanque, df_total)
+
+        # Muestra el campo de número de precinto viejo o utiliza el valor obtenido
+        numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo ', min_value=0, value=ultimo_numero_precinto or 0, step=1)
+        
+        # Obtener la cantidad inicial de litros del último registro
+        ultima_carga_tanque = df_total.tail(1)
+        ultima_carga_litros_cierre = ultima_carga_tanque['contadorLitrosCierre'].values[0] if not ultima_carga_tanque.empty else 0
+
+        contadorLitrosInicio = st.number_input('Ingrese la cantidad inicial de litros de combustible en el contador ', min_value=0, value=ultima_carga_litros_cierre, step=1)
+        
         litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=0, step=1)
-        contadorLitrosCierre = st.number_input('Ingrese la cantidad final de litros de combustible en el contador ', min_value=0, value=0, step=1)
+
+        # Calcular la cantidad final de litros sumando la cantidad cargada a la cantidad inicial
+        contadorLitrosCierre = contadorLitrosInicio + litrosCargados
+        
+        st.write(f"Cantidad final de litros de combustible en el contador: {contadorLitrosCierre}")
+
         numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo ', min_value=0, value=0, step=1)
         comentario = st.text_input('Ingrese un comentario, si se desea ')
 
@@ -148,9 +194,11 @@ def main():
         # Botón para realizar acciones asociadas a "Carga en Tanque"
         if st.button('Guardar Carga de Combustible en Tanque'):
             guardar_carga_empresa_en_s3(data_tanque, csv_filename)
+
     
     with st.expander('Visualiza Cargas de Combustible'):
         visualizaCombustible()
 
 if __name__ == "__main__":
     main()
+    visualizaCombustible()
