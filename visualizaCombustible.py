@@ -38,8 +38,7 @@ def visualizar_cargas_combustible():
         response_cargas_combustible = s3.get_object(Bucket=bucket_name, Key=s3_csv_key_cargas_combustible)
         cargas_combustible_df = pd.read_csv(io.BytesIO(response_cargas_combustible['Body'].read()))
     except s3.exceptions.NoSuchKey:
-        st.warning("No se encontró el archivo cargasCombustible.csv en S3. Creando un DataFrame vacío.")
-        cargas_combustible_df = pd.DataFrame(columns=['idCarga', 'coche', 'fecha', 'hora', 'lugarCarga', 'contadorLitrosInicio', 'contadorLitrosCierre', 'litrosCargados', 'precio', 'numeroPrecintoViejo', 'numeroPrecintoNuevo', 'comentario', 'usuario'])
+        st.warning("No se encontró el archivo cargasCombustible.csv en S3")
 
     # Filtrar por número de coche
     numero_coche = st.selectbox("Filtrar por Número de Coche", ['Todos'] + sorted(numeros_colectivos))
