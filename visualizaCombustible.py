@@ -59,9 +59,9 @@ def visualizar_cargas_combustible():
         cargas_combustible_df['fecha'] = pd.to_datetime(cargas_combustible_df['fecha'], errors='coerce', format='%d/%m/%Y')
         
         fecha_min = cargas_combustible_df['fecha'].min().date()
-        fecha_max = cargas_combustible_df['fecha'].max().date()
+        # fecha_max = cargas_combustible_df['fecha'].max().date()
 
-        fecha_seleccionada = st.date_input("Seleccionar Fecha", min_value=fecha_min, max_value=fecha_max)
+        fecha_seleccionada = st.date_input("Seleccionar Fecha", min_value=fecha_min, max_value=datetime.today())
 
         cargas_combustible_df = cargas_combustible_df[cargas_combustible_df['fecha'].dt.date == fecha_seleccionada]
 

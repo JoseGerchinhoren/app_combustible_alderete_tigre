@@ -6,3 +6,5 @@ idCarga,coche,fecha,hora,contadorLitrosInicio,contadorLitrosCierre,litrosCargado
 4,1,17/01/2024,21:02,0,3,3,0,0,,José,Tanque,0
 5,8,17/01/2024,21:03,3,9,6,0,0,,José,Tanque,0
 6,1,17/01/2024,21:03,9,13,4,0,2120,,José,Tanque,0
+7,1,17/01/2024,21:45,13,113,100,2120,2122,,Belen,Tanque,0
+8,1,19/01/2024,20:53,0,0,0,2122,0,,José,Surtidor,0
