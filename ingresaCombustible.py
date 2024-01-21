@@ -47,6 +47,37 @@ def cargar_dataframe_desde_s3():
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo CSV en S3.")
 
+def restar_litros_del_tanque(litros_cargados, s3, bucket_name):
+    stock_tanque_filename = "stock_tanque_config.txt"
+    
+    try:
+        # Intentar obtener el contenido actual del archivo desde S3
+        try:
+            response = s3.get_object(Bucket=bucket_name, Key=stock_tanque_filename)
+            stock_tanque_litros = int(response['Body'].read())
+        except s3.exceptions.NoSuchKey:
+            st.warning(f"No se encontró el archivo {stock_tanque_filename} en S3. Creando un nuevo archivo.")
+            stock_tanque_litros = 0 - litros_cargados
+            s3.put_object(Body=str(stock_tanque_litros), Bucket=bucket_name, Key=stock_tanque_filename)
+            st.success(f"Se creó un nuevo archivo {stock_tanque_filename} con un stock inicial de {-litros_cargados} litros.")
+
+        # Restar los litros cargados al stock
+        stock_tanque_litros -= litros_cargados
+        
+        # Actualizar el contenido del archivo en S3
+        s3.put_object(Body=str(stock_tanque_litros), Bucket=bucket_name, Key=stock_tanque_filename)
+
+        st.success(f"Se restaron {litros_cargados} litros del tanque. Nuevo stock: {stock_tanque_litros} litros.")
+
+    except NoCredentialsError:
+        st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
+
+    except ValueError:
+        st.error("El contenido del archivo no es un número entero. Verifica el contenido del archivo.")
+
+    except Exception as e:
+        st.error(f"Error al restar litros del tanque: {e}")
+
 def guardar_carga_empresa_en_s3(data, filename):
     try:
         # Leer el archivo CSV desde S3 o crear un DataFrame vacío con las columnas definidas
@@ -89,9 +120,9 @@ def guardar_carga_empresa_en_s3(data, filename):
         with io.StringIO() as csv_buffer:
             df_total.to_csv(csv_buffer, index=False)
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
-
+        
         # Guardar localmente también
-        df_total.to_csv("cargasCombustible.csv", index=False)
+        df_total.to_csv(csv_filename, index=False)
 
         st.success("Información guardada exitosamente!")
 
@@ -100,7 +131,7 @@ def guardar_carga_empresa_en_s3(data, filename):
 
     except Exception as e:
         st.error(f"Error al guardar la información: {e}")
-        
+
 def main():
     # Cargar el DataFrame desde S3
     df_total = cargar_dataframe_desde_s3()
@@ -194,7 +225,7 @@ def main():
         # Botón para realizar acciones asociadas a "Carga en Tanque"
         if st.button('Guardar Carga de Combustible en Tanque'):
             guardar_carga_empresa_en_s3(data_tanque, csv_filename)
-
+            restar_litros_del_tanque(litrosCargados, s3, bucket_name)
     
     with st.expander('Visualiza Cargas de Combustible'):
         visualizaCombustible()

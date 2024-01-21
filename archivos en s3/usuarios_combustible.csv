@@ -1,0 +1,3 @@
+idUsuario,nombreApellido,email,contraseña,fechaNacimiento,dni,domicilio,fechaCreacion,rol
+0,José,,24popeye,,1,,,admin
+1,Belen,,belenacosta,,1,,,admin

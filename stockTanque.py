@@ -23,6 +23,14 @@ formato_hora = '%H:%M'
 def ingresaStockTanque():
     st.title("Ingresar Carga de Combustible para el Tanque")
 
+    # Mostrar información actual de litros en el tanque
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
+        current_litros = int(response['Body'].read().decode())
+        st.info(f"Litros actuales en el tanque: {current_litros}")
+    except s3.exceptions.NoSuchKey:
+        st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
+
     # Entrada de litros desde el usuario
     litros = st.number_input('Ingrese la carga de combustible en litros para el tanque', min_value=0, value=None, step=1)
 
@@ -80,8 +88,19 @@ def guardar_stock_tanque_en_s3(data, filename):
             df_total.to_csv(csv_buffer, index=False)
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
-        # Guardar localmente también
-        df_total.to_csv("stock_tanque.csv", index=False)
+        # Guardar la variable de litros en el archivo stock_tanque_config.txt
+        try:
+            response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
+            current_litros = int(response['Body'].read().decode())
+        except s3.exceptions.NoSuchKey:
+            st.warning("No se encontró el archivo stock_tanque_config.txt en S3. Creando un archivo con valor inicial de litros.")
+            current_litros = 0
+
+        # Actualizar la variable de litros
+        current_litros += df_total['litros'].sum()
+
+        # Guardar el valor actualizado en el archivo stock_tanque_config.txt en S3
+        s3.put_object(Body=str(current_litros), Bucket=bucket_name, Key="stock_tanque_config.txt")
 
         st.success("Información guardada exitosamente!")
 
@@ -139,3 +158,6 @@ def main():
     # Expansor para visualizar el stock del tanque
     with st.expander('Visualizar Stock de Tanque'):
          visualizaStockTanque()
+
+if __name__ == "__main__":
+    main()
