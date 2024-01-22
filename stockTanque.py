@@ -27,7 +27,7 @@ def ingresaStockTanque():
     try:
         response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
         current_litros = int(response['Body'].read().decode())
-        st.info(f"Litros actuales en el tanque: {current_litros}")
+        st.info(f"{current_litros} Litros en Tanque")
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
 
@@ -152,7 +152,7 @@ def formatear_fecha(x):
 
 def main():
     # Expansor para ingresar stock en litros para el tanque
-    with st.expander('Ingrese Stock en Litros para el Tanque'):
+    with st.expander('Ingresar Carga en Tanque'):
         ingresaStockTanque()
           
     # Expansor para visualizar el stock del tanque

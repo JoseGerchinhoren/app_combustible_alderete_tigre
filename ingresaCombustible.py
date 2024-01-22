@@ -140,6 +140,14 @@ def main():
 
     usuario = st.session_state.user_nombre_apellido
 
+    # Mostrar información actual de litros en el tanque
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
+        current_litros = int(response['Body'].read().decode())
+        st.info(f"{current_litros} Litros en Tanque")
+    except s3.exceptions.NoSuchKey:
+        st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
+
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Carga en Surtidor'):
         coche_surtidor = st.selectbox("Seleccione número de coche:", numeros_colectivos)
