@@ -85,8 +85,7 @@ def guardar_carga_empresa_en_s3(data, filename):
             response = s3.get_object(Bucket=bucket_name, Key=filename)
             df_total = pd.read_csv(io.BytesIO(response['Body'].read()))
         except s3.exceptions.NoSuchKey:
-            st.warning("No se encontró el archivo CSV en S3. Creando un DataFrame vacío.")
-            df_total = pd.DataFrame(columns=['idCarga', 'coche', 'fecha', 'hora', 'lugarCarga', 'contadorLitrosInicio', 'contadorLitrosCierre', 'litrosCargados', 'precio', 'numeroPrecintoViejo', 'numeroPrecintoNuevo', 'comentario', 'usuario'])
+            st.warning("No se encontró el archivo CSV en S3")
 
         # Obtener el ID de la revisión (longitud actual del DataFrame)
         id_carga = len(df_total)
