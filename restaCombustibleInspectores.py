@@ -32,11 +32,15 @@ def restaCombustibleCoche():
 
     usuario = st.session_state.user_nombre_apellido
 
-    coche = st.selectbox("Seleccione número de coche:", numeros_colectivos)
+    coche = st.selectbox("Seleccione número de coche", numeros_colectivos)
+
+    chofer = st.text_input("Seleccione el Chofer")
+
+    servicioCompleto = st.checkbox("¿Completo el Servicio?")
 
     litrosRestados = st.number_input('Ingrese la cantidad aproximada de combustible consumido en litros', min_value=0, value=None, step=1)
 
-    comentario = st.text_input('Ingrese un comentario, si se desea ')
+    observaciones = st.text_input('Ingrese un comentario, si se desea ')
 
     # Obtener fecha y hora actual en formato de Argentina
     fecha = obtener_fecha_argentina().strftime(formato_fecha)
@@ -47,8 +51,10 @@ def restaCombustibleCoche():
         'coche': coche,
         'fecha': fecha,
         'hora': hora,
+        'chofer': chofer,
+        'servicioCompleto': servicioCompleto,
         'litrosRestados': litrosRestados,
-        'comentario': comentario,
+        'observaciones': observaciones,
         'usuario': usuario
     }
 
@@ -74,7 +80,10 @@ def guardar_carga_empresa_en_s3(data, filename):
             'coche': int(data['coche']),
             'fecha': data['fecha'],
             'hora': data['hora'],
-            'comentario': data.get('comentario', ''),
+            'chofer': data['chofer'],
+            'servicioCompleto': data['servicioCompleto'],
+            'litrosRestados': data['litrosRestados'],
+            'observaciones': data.get('observaciones', ''),
             'usuario': data['usuario']
         }
 
@@ -138,11 +147,9 @@ def formatear_fecha(x):
         return ''
     
 def main():
-    with st.expander('Resta Combustible Colectivos'): restaCombustibleCoche()
+    with st.expander('Restar Combustible en Colectivo'): restaCombustibleCoche()
 
-    with st.expander('Visualiza Restas Combustible Colectivos'): visualizaRestaCombustible()
+    with st.expander('Visualizar Restas de Combustible en Colectivos'): visualizaRestaCombustible()
 
 if __name__ == "__main__":
     main()
-
-#idStockTanque
