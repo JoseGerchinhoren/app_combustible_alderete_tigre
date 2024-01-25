@@ -62,7 +62,7 @@ def restaCombustibleCoche():
     if st.button('Guardar Carga de Combustible en Tanque'):
         guardar_carga_empresa_en_s3(data, csv_filename)
 
-def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
+def guardar_carga_empresa_en_s3(data, filename):
     try:
         # Leer el archivo CSV desde S3 o crear un DataFrame vacío con las columnas definidas
         try:
@@ -96,7 +96,7 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
         # Actualizar litros en el archivo litros_colectivos
-        actualizar_litros_en_colectivo(data['coche'], data['litrosRestados'], tipo_carga)
+        actualizar_litros_en_colectivo(data['coche'], data['litrosRestados'])
 
         st.success("Información guardada exitosamente!")
 
@@ -106,22 +106,24 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
     except Exception as e:
         st.error(f"Error al guardar la información: {e}")
 
-def actualizar_litros_en_colectivo(coche, litros, tipo_carga):
+def actualizar_litros_en_colectivo(coche, litros):
     try:
         # Obtener el contenido actual del archivo desde S3
         response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
         litros_colectivos = json.loads(response['Body'].read().decode())
 
-        # Actualizar los litros según el tipo de carga (surtidor o tanque)
-        if tipo_carga == 'Surtidor':
+        # Verificar si litrosRestados es None o un valor válido
+        if litros is not None:
             litros_colectivos[str(coche)] -= litros
             litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
             litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
 
-        # Actualizar el contenido del archivo en S3
-        s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
+            # Actualizar el contenido del archivo en S3
+            s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
 
-        st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {litros_colectivos[str(coche)]} litros.")
+            st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {litros_colectivos[str(coche)]} litros.")
+        else:
+            st.warning("No se pudo restar el combustible, el valor de litrosRestados es None.")
 
     except NoCredentialsError:
         st.error("Credenciales de AWS no disponibles. Verifica la configuración.")

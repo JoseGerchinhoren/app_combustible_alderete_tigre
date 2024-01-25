@@ -123,7 +123,7 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
         # Actualizar litros en el archivo litros_colectivos
-        actualizar_litros_en_colectivo(data['coche'], data['litrosCargados'], tipo_carga)
+        actualizar_litros_en_colectivo(data['coche'], data['litrosCargados'])
 
         st.success("Información guardada exitosamente!")
 
@@ -133,19 +133,16 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
     except Exception as e:
         st.error(f"Error al guardar la información: {e}")
 
-def actualizar_litros_en_colectivo(coche, litros, tipo_carga):
+def actualizar_litros_en_colectivo(coche, litros):
     try:
         # Obtener el contenido actual del archivo desde S3
         response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
         litros_colectivos = json.loads(response['Body'].read().decode())
 
-        # Actualizar los litros según el tipo de carga (surtidor o tanque)
-        if tipo_carga == 'Surtidor':
-            litros_colectivos[str(coche)] += litros
-        elif tipo_carga == 'Tanque':
-            litros_colectivos[str(coche)] += litros
-            litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
-            litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
+        # Actualizar los litros
+        litros_colectivos[str(coche)] += litros
+        litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
+        litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
 
         # Actualizar el contenido del archivo en S3
         s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
@@ -176,9 +173,6 @@ def main():
         st.info(f"{current_litros} Litros en Tanque")
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
-
-    with st.expander('Cantidad de Combustible en Colectivos'):
-        visualizar_litros_colectivos()
 
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Carga en Surtidor'):
@@ -267,6 +261,9 @@ def main():
             guardar_carga_empresa_en_s3(data_tanque, csv_filename, 'Tanque')
             restar_litros_del_tanque(litrosCargados, s3, bucket_name)
 
+    with st.expander('Cantidad de Combustible en Colectivos'):
+        visualizar_litros_colectivos()
+
     with st.expander('Visualiza Cargas de Combustible'):
         visualizaCombustible()
 
@@ -292,8 +289,23 @@ def visualizar_litros_colectivos():
     # Crear un DataFrame a partir del diccionario de litros_colectivos
     df_litros_colectivos = pd.DataFrame(list(litros_colectivos.items()), columns=['Colectivo', 'Litros'])
 
-    # Mostrar el DataFrame
-    st.dataframe(df_litros_colectivos)
+    # Ordenar el DataFrame por la columna "Litros" de menor a mayor
+    df_litros_colectivos = df_litros_colectivos.sort_values(by='Litros', ascending=True)
+
+    # Aplicar estilo a las celdas según el rango de litros
+    df_litros_colectivos_styled = df_litros_colectivos.style.applymap(colorizar_celda, subset=['Litros'])
+
+    # Mostrar el DataFrame ordenado y estilizado
+    st.dataframe(df_litros_colectivos_styled)
+
+def colorizar_celda(val):
+    if val < 100:
+        color = 'red'
+    elif 100 <= val < 200:
+        color = 'yellow'
+    else:
+        color = 'green'
+    return f'background-color: {color}; color: white'
 
 if __name__ == "__main__":
     main()
