@@ -8,7 +8,6 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 from visualizaCombustible import main as visualizaCombustible
 import json
-import matplotlib.pyplot as plt
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
