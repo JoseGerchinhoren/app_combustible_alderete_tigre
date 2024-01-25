@@ -7,6 +7,8 @@ import io
 import boto3
 from botocore.exceptions import NoCredentialsError
 from visualizaCombustible import main as visualizaCombustible
+import json
+import matplotlib.pyplot as plt
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -78,7 +80,7 @@ def restar_litros_del_tanque(litros_cargados, s3, bucket_name):
     except Exception as e:
         st.error(f"Error al restar litros del tanque: {e}")
 
-def guardar_carga_empresa_en_s3(data, filename):
+def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
     try:
         # Leer el archivo CSV desde S3 o crear un DataFrame vacío con las columnas definidas
         try:
@@ -120,8 +122,8 @@ def guardar_carga_empresa_en_s3(data, filename):
             df_total.to_csv(csv_buffer, index=False)
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
-        # Guardar localmente también
-        df_total.to_csv(csv_filename, index=False)
+        # Actualizar litros en el archivo litros_colectivos
+        actualizar_litros_en_colectivo(data['coche'], data['litrosCargados'], tipo_carga)
 
         st.success("Información guardada exitosamente!")
 
@@ -131,39 +133,33 @@ def guardar_carga_empresa_en_s3(data, filename):
     except Exception as e:
         st.error(f"Error al guardar la información: {e}")
 
-def actualizar_litros_en_tanque_colectivo(litros_cargados, s3, bucket_name):
-    stock_tanque_filename = "litros_colectivos.txt"
-    
+def actualizar_litros_en_colectivo(coche, litros, tipo_carga):
     try:
-        # Intentar obtener el contenido actual del archivo desde S3
-        try:
-            response = s3.get_object(Bucket=bucket_name, Key=stock_tanque_filename)
-            stock_tanque_litros = int(response['Body'].read())
-        except s3.exceptions.NoSuchKey:
-            st.warning(f"No se encontró el archivo {stock_tanque_filename} en S3. Creando un nuevo archivo.")
-            stock_tanque_litros = 0 - litros_cargados
-            s3.put_object(Body=str(stock_tanque_litros), Bucket=bucket_name, Key=stock_tanque_filename)
-            st.success(f"Se creó un nuevo archivo {stock_tanque_filename} con un stock inicial de {-litros_cargados} litros.")
+        # Obtener el contenido actual del archivo desde S3
+        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
+        litros_colectivos = json.loads(response['Body'].read().decode())
 
-        # Sumar los litros cargados al stock
-        stock_tanque_litros += litros_cargados
-        
-        # Verificar límites de stock
-        stock_tanque_litros = max(0, min(stock_tanque_litros, 300))
+        # Actualizar los litros según el tipo de carga (surtidor o tanque)
+        if tipo_carga == 'Surtidor':
+            litros_colectivos[str(coche)] += litros
+        elif tipo_carga == 'Tanque':
+            litros_colectivos[str(coche)] += litros
+            litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
+            litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
 
         # Actualizar el contenido del archivo en S3
-        s3.put_object(Body=str(stock_tanque_litros), Bucket=bucket_name, Key=stock_tanque_filename)
+        s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
 
-        st.success(f"Se actualizaron los litros en el tanque. Nuevo stock: {stock_tanque_litros} litros.")
+        st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {litros_colectivos[str(coche)]} litros.")
 
     except NoCredentialsError:
         st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
 
     except ValueError:
-        st.error("El contenido del archivo no es un número entero. Verifica el contenido del archivo.")
+        st.error("Error al procesar el archivo litros_colectivos.json.")
 
     except Exception as e:
-        st.error(f"Error al actualizar litros en el tanque: {e}")
+        st.error(f"Error al actualizar litros en colectivo: {e}")
 
 def main():
     # Cargar el DataFrame desde S3
@@ -180,6 +176,9 @@ def main():
         st.info(f"{current_litros} Litros en Tanque")
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
+
+    with st.expander('Cantidad de Combustible en Colectivos'):
+        visualizar_litros_colectivos()
 
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Carga en Surtidor'):
@@ -216,7 +215,7 @@ def main():
 
         # Botón para realizar acciones asociadas a "Carga en Surtidor"
         if st.button('Guardar Carga de Combustible en Surtidor'):
-            guardar_carga_empresa_en_s3(data_surtidor, csv_filename)
+            guardar_carga_empresa_en_s3(data_surtidor, csv_filename, 'Surtidor')
 
     # Utilizando st.expander para la sección "Carga en Tanque"
     with st.expander('Carga en Tanque'):
@@ -265,13 +264,36 @@ def main():
 
         # Botón para realizar acciones asociadas a "Carga en Tanque"
         if st.button('Guardar Carga de Combustible en Tanque'):
-            guardar_carga_empresa_en_s3(data_tanque, csv_filename)
+            guardar_carga_empresa_en_s3(data_tanque, csv_filename, 'Tanque')
             restar_litros_del_tanque(litrosCargados, s3, bucket_name)
-            # Actualizar litros en tanque
-            actualizar_litros_en_tanque_colectivo(litrosCargados, s3, bucket_name)
-    
+
     with st.expander('Visualiza Cargas de Combustible'):
         visualizaCombustible()
+
+def obtener_litros_colectivos():
+    try:
+        # Obtener el contenido actual del archivo desde S3
+        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
+        litros_colectivos = json.loads(response['Body'].read().decode())
+        return litros_colectivos
+    except (s3.exceptions.NoSuchKey, NoCredentialsError, ValueError) as e:
+        st.error(f"Error al obtener datos de litros de colectivos: {e}")
+        return {}
+
+def visualizar_litros_colectivos():
+    st.title("Litros de Combustible por Colectivo")
+
+    litros_colectivos = obtener_litros_colectivos()
+
+    if not litros_colectivos:
+        st.warning("No se pudieron obtener los datos de litros de colectivos.")
+        return
+
+    # Crear un DataFrame a partir del diccionario de litros_colectivos
+    df_litros_colectivos = pd.DataFrame(list(litros_colectivos.items()), columns=['Colectivo', 'Litros'])
+
+    # Mostrar el DataFrame
+    st.dataframe(df_litros_colectivos)
 
 if __name__ == "__main__":
     main()

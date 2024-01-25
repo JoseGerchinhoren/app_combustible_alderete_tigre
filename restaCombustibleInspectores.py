@@ -6,7 +6,7 @@ from config import cargar_configuracion
 import io
 import boto3
 from botocore.exceptions import NoCredentialsError
-
+import json
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
 
@@ -62,7 +62,7 @@ def restaCombustibleCoche():
     if st.button('Guardar Carga de Combustible en Tanque'):
         guardar_carga_empresa_en_s3(data, csv_filename)
 
-def guardar_carga_empresa_en_s3(data, filename):
+def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
     try:
         # Leer el archivo CSV desde S3 o crear un DataFrame vacío con las columnas definidas
         try:
@@ -94,9 +94,9 @@ def guardar_carga_empresa_en_s3(data, filename):
         with io.StringIO() as csv_buffer:
             df_total.to_csv(csv_buffer, index=False)
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
-        
-        # Guardar localmente también
-        df_total.to_csv(csv_filename, index=False)
+
+        # Actualizar litros en el archivo litros_colectivos
+        actualizar_litros_en_colectivo(data['coche'], data['litrosRestados'], tipo_carga)
 
         st.success("Información guardada exitosamente!")
 
@@ -105,6 +105,32 @@ def guardar_carga_empresa_en_s3(data, filename):
 
     except Exception as e:
         st.error(f"Error al guardar la información: {e}")
+
+def actualizar_litros_en_colectivo(coche, litros, tipo_carga):
+    try:
+        # Obtener el contenido actual del archivo desde S3
+        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
+        litros_colectivos = json.loads(response['Body'].read().decode())
+
+        # Actualizar los litros según el tipo de carga (surtidor o tanque)
+        if tipo_carga == 'Surtidor':
+            litros_colectivos[str(coche)] -= litros
+            litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
+            litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
+
+        # Actualizar el contenido del archivo en S3
+        s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
+
+        st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {litros_colectivos[str(coche)]} litros.")
+
+    except NoCredentialsError:
+        st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
+
+    except ValueError:
+        st.error("Error al procesar el archivo litros_colectivos.json.")
+
+    except Exception as e:
+        st.error(f"Error al actualizar litros en colectivo: {e}")
 
 def visualizaRestaCombustible():
     st.title("Visualizar Restas de Combustible en Colectivos")
