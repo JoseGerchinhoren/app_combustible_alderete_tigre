@@ -104,7 +104,7 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
             'precio': int(data.get('precio', 0)),
             'numeroPrecintoViejo': int(data.get('numeroPrecintoViejo', 0)),
             'numeroPrecintoNuevo': int(data.get('numeroPrecintoNuevo', 0)),
-            'comentario': data.get('comentario', ''),
+            'observacion': data.get('observacion', ''),
             'usuario': data['usuario']
         }
 
@@ -181,34 +181,39 @@ def main():
         ultimo_numero_precinto = obtener_ultimo_registro_por_coche(coche_surtidor, df_total)
 
         # Muestra el campo de número de precinto viejo o utiliza el valor obtenido
-        numeroPrecintoViejo_surtidor = st.number_input('Ingrese el numero de precinto viejo', min_value=0, value=ultimo_numero_precinto or 0, step=1)
+        numeroPrecintoViejo_surtidor = st.number_input('Ingrese el numero de precinto viejo', min_value=0, value=ultimo_numero_precinto or None, step=1)
 
-        litrosCargados_surtidor = st.number_input('Ingrese la cantidad de litros cargados', min_value=0, value=0, step=1)
-        precio_surtidor = st.number_input('Ingrese el precio de la carga en pesos', min_value=0, value=0, step=1)
-        numeroPrecintoNuevo_surtidor = st.number_input('Ingrese el numero de precinto nuevo', min_value=0, value=0, step=1)
-        comentario_surtidor = st.text_input('Ingrese un comentario, si se desea')
-
+        litrosCargados_surtidor = st.number_input('Ingrese la cantidad de litros cargados', min_value=0, value=None, step=1)
+        precio_surtidor = st.number_input('Ingrese el precio de la carga en pesos', min_value=0, value=None, step=1)
+        numeroPrecintoNuevo_surtidor = st.number_input('Ingrese el numero de precinto nuevo', min_value=0, value=None, step=1)
+        observacion_surtidor = st.text_input('Ingrese una observacion, si se desea')
+        
         # Obtener fecha y hora actual en formato de Argentina
         fecha_surtidor = obtener_fecha_argentina().strftime(formato_fecha)
         hora_surtidor = obtener_fecha_argentina().strftime(formato_hora)
 
-        # Crear un diccionario con la información del formulario
-        data_surtidor = {
-            'lugarCarga': 'Surtidor',
-            'coche': coche_surtidor,
-            'fecha': fecha_surtidor,
-            'hora': hora_surtidor,
-            'numeroPrecintoViejo': numeroPrecintoViejo_surtidor,
-            'litrosCargados': litrosCargados_surtidor,
-            'precio': precio_surtidor,
-            'numeroPrecintoNuevo': numeroPrecintoNuevo_surtidor,
-            'comentario': comentario_surtidor,
-            'usuario': usuario,
-        }
-
         # Botón para realizar acciones asociadas a "Carga en Surtidor"
         if st.button('Guardar Carga de Combustible en Surtidor'):
-            guardar_carga_empresa_en_s3(data_surtidor, csv_filename, 'Surtidor')
+            # Validar campos obligatorios antes de guardar
+            campos_faltantes_surtidor = validar_campos_surtidor(coche_surtidor, numeroPrecintoViejo_surtidor, litrosCargados_surtidor, precio_surtidor, numeroPrecintoNuevo_surtidor)
+            
+            if campos_faltantes_surtidor:
+                st.warning(f"¡Por favor, complete los siguientes campos obligatorios para Carga en Surtidor: {', '.join(campos_faltantes_surtidor)}!")
+            else:
+                # Continuar con el proceso de guardar
+                data_surtidor = {
+                    'lugarCarga': 'Surtidor',
+                    'coche': coche_surtidor,
+                    'fecha': fecha_surtidor,
+                    'hora': hora_surtidor,
+                    'numeroPrecintoViejo': numeroPrecintoViejo_surtidor,
+                    'litrosCargados': litrosCargados_surtidor,
+                    'precio': precio_surtidor,
+                    'numeroPrecintoNuevo': numeroPrecintoNuevo_surtidor,
+                    'observacion': observacion_surtidor,
+                    'usuario': usuario,
+                }
+                guardar_carga_empresa_en_s3(data_surtidor, csv_filename, 'Surtidor')
 
     # Utilizando st.expander para la sección "Carga en Tanque"
     with st.expander('Carga en Tanque'):
@@ -218,53 +223,83 @@ def main():
         ultimo_numero_precinto = obtener_ultimo_registro_por_coche(coche_tanque, df_total)
 
         # Muestra el campo de número de precinto viejo o utiliza el valor obtenido
-        numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo ', min_value=0, value=ultimo_numero_precinto or 0, step=1)
-        
+        numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo ', min_value=0, value=ultimo_numero_precinto or None, step=1)
+
         # Obtener la cantidad inicial de litros del último registro
         ultima_carga_tanque = df_total.tail(1)
         ultima_carga_litros_cierre = ultima_carga_tanque['contadorLitrosCierre'].values[0] if not ultima_carga_tanque.empty else 0
 
         contadorLitrosInicio = st.number_input('Ingrese la cantidad inicial de litros de combustible en el contador ', min_value=0, value=ultima_carga_litros_cierre, step=1)
-        
-        litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=0, step=1)
+
+        litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=None, step=1)
 
         # Calcular la cantidad final de litros sumando la cantidad cargada a la cantidad inicial
-        contadorLitrosCierre = contadorLitrosInicio + litrosCargados
-        
+        contadorLitrosCierre = (contadorLitrosInicio or 0) + (litrosCargados or 0)
+
         st.write(f"Cantidad final de litros de combustible en el contador: {contadorLitrosCierre}")
 
-        numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo ', min_value=0, value=0, step=1)
-        comentario = st.text_input('Ingrese un comentario, si se desea ')
+        numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo ', min_value=0, value=None, step=1)
+        observacion = st.text_input('Ingrese una observacion, si se desea ')
 
-        # Obtener fecha y hora actual en formato de Argentina
-        fecha_tanque = obtener_fecha_argentina().strftime(formato_fecha)
-        hora_tanque = obtener_fecha_argentina().strftime(formato_hora)
+        # Validar campos obligatorios
+        campos_faltantes_tanque = []
+        if coche_tanque is None:
+            campos_faltantes_tanque.append("Número de coche")
+        if numeroPrecintoViejo is None:
+            campos_faltantes_tanque.append("Número de precinto viejo")
+        if contadorLitrosInicio is None:
+            campos_faltantes_tanque.append("Contador de litros al inicio")
+        if litrosCargados is None:
+            campos_faltantes_tanque.append("Litros cargados")
+        if numeroPrecintoNuevo is None:
+            campos_faltantes_tanque.append("Número de precinto nuevo")
 
-        # Crear un diccionario con la información del formulario
-        data_tanque = {
-            'lugarCarga': 'Tanque',
-            'coche': coche_tanque,
-            'fecha': fecha_tanque,
-            'hora': hora_tanque,
-            'numeroPrecintoViejo': numeroPrecintoViejo,
-            'contadorLitrosInicio': contadorLitrosInicio,
-            'litrosCargados': litrosCargados,
-            'contadorLitrosCierre': contadorLitrosCierre,
-            'numeroPrecintoNuevo': numeroPrecintoNuevo,
-            'comentario': comentario,
-            'usuario': usuario
-        }
-
-        # Botón para realizar acciones asociadas a "Carga en Tanque"
+        # Mostrar mensaje de advertencia solo si se ha intentado guardar
         if st.button('Guardar Carga de Combustible en Tanque'):
-            guardar_carga_empresa_en_s3(data_tanque, csv_filename, 'Tanque')
-            restar_litros_del_tanque(litrosCargados, s3, bucket_name)
+            if campos_faltantes_tanque:
+                st.error(f"¡Por favor, complete los siguientes campos obligatorios para Carga en Tanque: {', '.join(campos_faltantes_tanque)}!")
+            else:
+                # Continuar con el proceso de guardar
+                fecha_tanque = obtener_fecha_argentina().strftime(formato_fecha)
+                hora_tanque = obtener_fecha_argentina().strftime(formato_hora)
 
-    with st.expander('Cantidad de Combustible en Colectivos'):
+                data_tanque = {
+                    'lugarCarga': 'Tanque',
+                    'coche': coche_tanque,
+                    'fecha': fecha_tanque,
+                    'hora': hora_tanque,
+                    'numeroPrecintoViejo': numeroPrecintoViejo,
+                    'contadorLitrosInicio': contadorLitrosInicio,
+                    'litrosCargados': litrosCargados,
+                    'contadorLitrosCierre': contadorLitrosCierre,
+                    'numeroPrecintoNuevo': numeroPrecintoNuevo,
+                    'observacion': observacion,
+                    'usuario': usuario
+                }
+                guardar_carga_empresa_en_s3(data_tanque, csv_filename, 'Tanque')
+                restar_litros_del_tanque(litrosCargados, s3, bucket_name)
+
+
+    with st.expander('Visualiza Cantidad de Combustible en Colectivos'):
         visualizar_litros_colectivos()
 
     with st.expander('Visualiza Cargas de Combustible'):
         visualizaCombustible()
+    
+def validar_campos_surtidor(coche, numero_precinto_viejo, litros_cargados, precio, numero_precinto_nuevo):
+    campos_faltantes_surtidor = []
+    if coche is None:
+        campos_faltantes_surtidor.append("Número de coche")
+    if numero_precinto_viejo is None:
+        campos_faltantes_surtidor.append("Número de precinto viejo")
+    if litros_cargados is None:
+        campos_faltantes_surtidor.append("Litros cargados")
+    if precio is None:
+        campos_faltantes_surtidor.append("Precio")
+    if numero_precinto_nuevo is None:
+        campos_faltantes_surtidor.append("Número de precinto nuevo")
+
+    return campos_faltantes_surtidor
 
 def obtener_litros_colectivos():
     try:
@@ -301,7 +336,7 @@ def colorizar_celda(val):
     if val < 100:
         color = 'red'
     elif 100 <= val < 200:
-        color = 'yellow'
+        color = 'orange'
     else:
         color = 'green'
     return f'background-color: {color}; color: white'

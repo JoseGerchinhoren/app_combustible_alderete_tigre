@@ -76,7 +76,7 @@ def main():
         st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Stock de Tanque", "Combustible en Coches", "Nuevo Usuario", "Visualiza Usuarios"])
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Stock de Tanque", "Combustible en Colectivos", "Nuevo Usuario", "Visualiza Usuarios"])
             if selected_option == "Nuevo Usuario":
                 ingresa_usuario()
             if selected_option == "Visualiza Usuarios":
@@ -87,7 +87,7 @@ def main():
                 visualizaCombustible()
             if selected_option == "Stock de Tanque":
                 stockTanque()
-            if selected_option == "Combustible en Coches":
+            if selected_option == "Combustible en Colectivos":
                 stockColectivos()
             
             if selected_option == "Inicio":
