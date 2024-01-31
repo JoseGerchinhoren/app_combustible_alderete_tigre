@@ -173,6 +173,13 @@ def actualizar_contador_tanque_s3(nuevo_valor):
         s3.put_object(Body=str(nuevo_valor), Bucket=bucket_name, Key="contador_tanque_combustible.txt")
     except Exception as e:
         st.error(f"Error al actualizar el contador del tanque en S3: {e}")
+    
+def obtener_colectivos_bajos_litros(litros_colectivos, umbral_litros=50):
+    """
+    Función para obtener los colectivos que tienen menos de cierta cantidad de litros.
+    """
+    colectivos_bajos_litros = [colectivo for colectivo, litros in litros_colectivos.items() if litros < umbral_litros]
+    return colectivos_bajos_litros
 
 def main():
     # Cargar el DataFrame desde S3
@@ -186,10 +193,19 @@ def main():
     try:
         response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
         current_litros = int(response['Body'].read().decode())
-        st.info(f"{current_litros} Litros en Tanque")
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
 
+    # Mostrar información sobre colectivos con menos de 50 litros
+    litros_colectivos = obtener_litros_colectivos()
+    colectivos_bajos_litros = obtener_colectivos_bajos_litros(litros_colectivos)
+
+    if colectivos_bajos_litros:
+        mensaje_colectivos_bajos_litros = f"Los colectivos {', '.join(map(str, colectivos_bajos_litros))} tienen menos de 50 litros."
+        st.info(mensaje_colectivos_bajos_litros)
+    else:
+        st.info("Todos los colectivos tienen al menos 50 litros.")
+        
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Carga en Surtidor'):
         coche_surtidor = st.selectbox("Seleccione número de coche:", numeros_colectivos)
@@ -234,6 +250,8 @@ def main():
 
     # Utilizando st.expander para la sección "Carga en Tanque"
     with st.expander('Carga en Tanque'):
+        st.info(f"{current_litros} Litros en Tanque")
+
         coche_tanque = st.selectbox("Seleccione número de coche: ", numeros_colectivos)
 
         # Obtén el último número de precinto nuevo para el coche seleccionado
