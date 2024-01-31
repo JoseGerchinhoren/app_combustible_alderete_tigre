@@ -1,5 +1,4 @@
 import streamlit as st
-from datetime import datetime
 from horario import obtener_fecha_argentina
 import pandas as pd
 from config import cargar_configuracion
@@ -157,6 +156,24 @@ def actualizar_litros_en_colectivo(coche, litros):
     except Exception as e:
         st.error(f"Error al actualizar litros en colectivo: {e}")
 
+def obtener_contador_tanque_s3():
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key="contador_tanque_combustible.txt")
+        return int(response['Body'].read().decode())
+    except s3.exceptions.NoSuchKey:
+        st.warning("No se encontró el archivo contador_tanque_combustible.txt en S3. Creando un nuevo archivo.")
+        s3.put_object(Body='0', Bucket=bucket_name, Key="contador_tanque_combustible.txt")
+        return 0
+    except Exception as e:
+        st.error(f"Error al obtener el contador del tanque desde S3: {e}")
+        return 0
+
+def actualizar_contador_tanque_s3(nuevo_valor):
+    try:
+        s3.put_object(Body=str(nuevo_valor), Bucket=bucket_name, Key="contador_tanque_combustible.txt")
+    except Exception as e:
+        st.error(f"Error al actualizar el contador del tanque en S3: {e}")
+
 def main():
     # Cargar el DataFrame desde S3
     df_total = cargar_dataframe_desde_s3()
@@ -225,18 +242,19 @@ def main():
         # Muestra el campo de número de precinto viejo o utiliza el valor obtenido
         numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo ', min_value=0, value=ultimo_numero_precinto or None, step=1)
 
-        # Obtener la cantidad inicial de litros del último registro
-        ultima_carga_tanque = df_total.tail(1)
-        ultima_carga_litros_cierre = ultima_carga_tanque['contadorLitrosCierre'].values[0] if not ultima_carga_tanque.empty else 0
+        contadorLitrosInicio = st.number_input('Contador Inicio', min_value=0, value=obtener_contador_tanque_s3(), step=1)
 
-        contadorLitrosInicio = st.number_input('Ingrese la cantidad inicial de litros de combustible en el contador ', min_value=0, value=ultima_carga_litros_cierre, step=1)
+        # # Obtener el contador del tanque desde S3
+        # contadorLitrosInicio = obtener_contador_tanque_s3()
+
+        # st.write(f"Contador Inicio: {contadorLitrosInicio}")
 
         litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=None, step=1)
 
-        # Calcular la cantidad final de litros sumando la cantidad cargada a la cantidad inicial
-        contadorLitrosCierre = (contadorLitrosInicio or 0) + (litrosCargados or 0)
+        # Calcular la cantidad final de litros sumando la cantidad cargada al contador actual
+        contadorLitrosCierre = contadorLitrosInicio + (litrosCargados or 0)
 
-        st.write(f"Cantidad final de litros de combustible en el contador: {contadorLitrosCierre}")
+        st.write(f"Contador Final: {contadorLitrosCierre}")
 
         numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo ', min_value=0, value=None, step=1)
         observacion = st.text_input('Ingrese una observacion, si se desea ')
@@ -279,6 +297,11 @@ def main():
                 guardar_carga_empresa_en_s3(data_tanque, csv_filename, 'Tanque')
                 restar_litros_del_tanque(litrosCargados, s3, bucket_name)
 
+                # Actualizar el contador del tanque en S3
+                actualizar_contador_tanque_s3(contadorLitrosCierre)
+
+                # Recargar la página
+                st.experimental_rerun()
 
     with st.expander('Visualiza Cantidad de Combustible en Colectivos'):
         visualizar_litros_colectivos()
