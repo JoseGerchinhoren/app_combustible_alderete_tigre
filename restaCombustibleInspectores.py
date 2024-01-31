@@ -29,8 +29,6 @@ numeros_colectivos = [
 ]
 
 def restaCombustibleCoche():
-    st.title('Resta Combustible de Stock de Colectivos')
-
     usuario = st.session_state.user_nombre_apellido
 
     coche = st.selectbox("Seleccione número de coche", numeros_colectivos)
@@ -176,6 +174,7 @@ def formatear_fecha(x):
         return ''
     
 def main():
+    st.title('Resta de Combustible en Colectivos')
     with st.expander('Restar Combustible en Colectivo'): restaCombustibleCoche()
 
     with st.expander('Visualizar Restas de Combustible en Colectivos'): visualizaRestaCombustible()

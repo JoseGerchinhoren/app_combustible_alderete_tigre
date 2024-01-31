@@ -76,31 +76,32 @@ def main():
         st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Combustible en Colectivos", "Stock de Tanque", "Nuevo Usuario", "Visualiza Usuarios"])
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Resta de Combustible", "Stock de Tanque", "Nuevo Usuario", "Visualiza Usuarios"])
             if selected_option == "Nuevo Usuario":
                 ingresa_usuario()
             if selected_option == "Visualiza Usuarios":
                 visualiza_usuarios()
             if selected_option == "Carga de Combustible":
                 revisionFosa()
-            if selected_option == "Visualizar Cargas de Combustible":
-                visualizaCombustible()
             if selected_option == "Stock de Tanque":
                 stockTanque()
-            if selected_option == "Combustible en Colectivos":
+            if selected_option == "Resta de Combustible":
                 stockColectivos()
             
-            if selected_option == "Inicio":
-                texto_inicio()            
+            # if selected_option == "Inicio":
+            #     texto_inicio()            
 
-        else:
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible en Empresa", "Visualizar Cargas de Combustible"])
-            if selected_option == "Carga de Combustible en Empresa":
+        elif user_rol == "empleado":
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Resta de Combustible", "Stock de Tanque"])
+            if selected_option == "Carga de Combustible":
                 revisionFosa()
-            if selected_option == "Visualizar Cargas de Combustible":
-                visualizaCombustible()
-            if selected_option == "Inicio":
-                texto_inicio()
+            if selected_option == "Stock de Tanque":
+                stockTanque()
+            if selected_option == "Resta de Combustible":
+                stockColectivos()
+
+        elif user_rol == "inspector":
+            stockColectivos()
 
         st.write(f"Usuario: {user_nombre_apellido}")
 

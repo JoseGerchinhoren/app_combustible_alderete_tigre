@@ -11,20 +11,18 @@ aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion(
 s3 = boto3.client('s3', aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, region_name=region_name)
 
 def visualizar_usuarios():
-    st.title("""Visualizar Usuarios \n * Visualice la informacion de los usuarios, salvo la contraseña. \n * Edite la información del usuario ingresando el ID correspondiente y modifique los campos necesarios. \n * Presione 'Guardar cambios' para confirmar las modificaciones.""")
-
-    st.header("Usuarios")
+    st.header("Visualiza Usuarios")
 
     # Cargar el archivo usuarios.csv desde S3
     s3_csv_key = 'usuarios_combustible.csv'
     csv_obj = s3.get_object(Bucket=bucket_name, Key=s3_csv_key)
-    usuarios_df = pd.read_csv(io.BytesIO(csv_obj['Body'].read()), dtype={'idUsuario': int, 'dni': int}).applymap(lambda x: str(x).replace(',', '') if pd.notna(x) else x)
+    usuarios_df = pd.read_csv(io.BytesIO(csv_obj['Body'].read()), dtype={'idUsuario': int}).applymap(lambda x: str(x).replace(',', '') if pd.notna(x) else x)
 
     # Cambiar los nombres de las columnas si es necesario
-    usuarios_df.columns = ["ID", "Nombre y Apellido", "Email", "contraseña", "Fecha de Nacimiento", "DNI", "Domicilio", "Fecha de Creacion", "Rol"]
+    usuarios_df.columns = ["ID", "Nombre y Apellido", "contraseña", "Fecha de Creacion", "Rol"]
 
     # Cambiar el orden de las columnas según el nuevo orden deseado
-    usuarios_df = usuarios_df[["ID", "Nombre y Apellido", "Email", "Fecha de Nacimiento", "DNI", "Domicilio", "Fecha de Creacion", "Rol"]]
+    usuarios_df = usuarios_df[["ID", "Nombre y Apellido", "Fecha de Creacion", "Rol"]]
 
     # Convertir la columna "ID" a tipo int
     usuarios_df['ID'] = usuarios_df['ID'].astype(int)
@@ -48,7 +46,7 @@ def editar_usuario():
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
         csv_file_key = 'usuarios_combustible.csv'
         response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
-        usuarios_df = pd.read_csv(io.BytesIO(response['Body'].read()), dtype={'idUsuario': int, 'dni': int}).applymap(lambda x: str(x).replace(',', '') if pd.notna(x) else x)
+        usuarios_df = pd.read_csv(io.BytesIO(response['Body'].read()), dtype={'idUsuario': int}).applymap(lambda x: str(x).replace(',', '') if pd.notna(x) else x)
 
         # Filtrar el DataFrame para obtener el arreglo específico por ID
         usuario_editar_df = usuarios_df[usuarios_df['idUsuario'].astype(str) == str(id_usuario_editar)]
@@ -62,11 +60,14 @@ def editar_usuario():
             # Mostrar campos para editar cada variable
             for column in usuario_editar_df.columns:
                 if column != 'idUsuario' and column != 'fechaCreacion' and column != 'contraseña':  # Evitar editar estos campos
-                    nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=usuario_editar_df.iloc[0][column])
+                    if column == 'rol':
+                        nuevo_valor = st.selectbox("Rol", ["empleado", "inspector", "admin"], index=["empleado", "inspector", "admin"].index(usuario_editar_df.iloc[0][column]))
+                    else:
+                        nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=usuario_editar_df.iloc[0][column])
                     usuario_editar_df.at[usuario_editar_df.index[0], column] = nuevo_valor
 
             # Botón para guardar los cambios
-            if st.button("Guardar cambios"):
+            if st.button("Guardar cambios", key="guardar_cambios_btn"):
                 # Actualizar el DataFrame original con los cambios realizados
                 usuarios_df.update(usuario_editar_df)
 

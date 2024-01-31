@@ -12,7 +12,7 @@ aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion(
 s3 = boto3.client('s3', aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, region_name=region_name)
 
 # Función para insertar un nuevo usuario en la base de datos
-def insertar_usuario(nombre_apellido, email, contraseña, confirmar_contraseña, fecha_nacimiento, dni, domicilio, fecha_creacion, rol):
+def insertar_usuario(nombre_apellido, contraseña, confirmar_contraseña, fecha_creacion, rol):
     try:
         # Verificar si las contraseñas coinciden
         if contraseña != confirmar_contraseña:
@@ -20,7 +20,7 @@ def insertar_usuario(nombre_apellido, email, contraseña, confirmar_contraseña,
             return
 
         # Leer el archivo CSV desde S3
-        csv_file_key = 'usuarios.csv'
+        csv_file_key = 'usuarios_combustible.csv'
         response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
         usuarios_df = pd.read_csv(io.BytesIO(response['Body'].read()))
 
@@ -31,9 +31,8 @@ def insertar_usuario(nombre_apellido, email, contraseña, confirmar_contraseña,
         nuevo_id = 1 if pd.isna(ultimo_id) else int(ultimo_id) + 1
 
         # Crear una nueva fila como un diccionario
-        nueva_fila = {'idUsuario': nuevo_id, 'nombreApellido': nombre_apellido, 'email': email,
-                      'contraseña': contraseña, 'fechaNacimiento': fecha_nacimiento, 'dni': dni,
-                      'domicilio': domicilio, 'fechaCreacion': fecha_creacion, 'rol': rol}
+        nueva_fila = {'idUsuario': nuevo_id, 'nombreApellido': nombre_apellido,
+                      'contraseña': contraseña, 'fechaCreacion': fecha_creacion, 'rol': rol}
 
         # Convertir el diccionario a DataFrame y concatenarlo al DataFrame existente
         usuarios_df = pd.concat([usuarios_df, pd.DataFrame([nueva_fila])], ignore_index=True)
@@ -53,30 +52,18 @@ def ingresa_usuario():
 
     # Campos para ingresar los datos del nuevo usuario
     nombre_apellido = st.text_input("Nombre y Apellido:")
-    email = st.text_input("Email:")
     contraseña = st.text_input("Contraseña:", type="password")
     confirmar_contraseña = st.text_input("Confirmar Contraseña:", type="password")
-    fecha_nacimiento = st.date_input("Fecha de Nacimiento:")
-    dni = st.text_input("DNI:")
-    if dni:
-        if dni.isdigit():
-            dni = int(dni)
-        else:
-            st.warning("El dni debe ser un número entero.")
-            dni = None
-    else:
-        dni = None
-    domicilio = st.text_input("Domicilio:")
     
     # El campo 'fecha_creacion' se asigna automáticamente a la fecha actual
     fecha_creacion = datetime.now().strftime("%Y-%m-%d")
     
-    rol = st.selectbox("Rol:", ["empleado", "admin"])
+    rol = st.selectbox("Rol:", ["empleado", "inspector","admin"])
 
     # Botón para registrar el nuevo usuario
     if st.button("Registrar Usuario"):
-        if nombre_apellido and email and contraseña and confirmar_contraseña and fecha_nacimiento and dni and domicilio and rol:
-            insertar_usuario(nombre_apellido, email, contraseña, confirmar_contraseña, fecha_nacimiento, dni, domicilio, fecha_creacion, rol)
+        if nombre_apellido and contraseña and confirmar_contraseña and rol:
+            insertar_usuario(nombre_apellido, contraseña, confirmar_contraseña, fecha_creacion, rol)
         else:
             st.warning("Por favor, complete todos los campos.")
 
