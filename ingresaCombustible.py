@@ -140,7 +140,7 @@ def actualizar_litros_en_colectivo(coche, litros):
         # Actualizar los litros
         litros_colectivos[str(coche)] += litros
         litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
-        litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
+        litros_colectivos[str(coche)] = min(500, litros_colectivos[str(coche)])  # Limitar a 300 litros
 
         # Actualizar el contenido del archivo en S3
         s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
@@ -174,7 +174,7 @@ def actualizar_contador_tanque_s3(nuevo_valor):
     except Exception as e:
         st.error(f"Error al actualizar el contador del tanque en S3: {e}")
     
-def obtener_colectivos_bajos_litros(litros_colectivos, umbral_litros=50):
+def obtener_colectivos_bajos_litros(litros_colectivos, umbral_litros=100):
     """
     Función para obtener los colectivos que tienen menos de cierta cantidad de litros.
     """
@@ -201,10 +201,10 @@ def main():
     colectivos_bajos_litros = obtener_colectivos_bajos_litros(litros_colectivos)
 
     if colectivos_bajos_litros:
-        mensaje_colectivos_bajos_litros = f"Los colectivos {', '.join(map(str, colectivos_bajos_litros))} tienen menos de 50 litros."
+        mensaje_colectivos_bajos_litros = f"Los colectivos {', '.join(map(str, colectivos_bajos_litros))} tienen menos de 100 litros."
         st.info(mensaje_colectivos_bajos_litros)
     else:
-        st.info("Todos los colectivos tienen al menos 50 litros.")
+        st.info("Todos los colectivos tienen al menos 100 litros.")
         
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Carga en Surtidor'):
