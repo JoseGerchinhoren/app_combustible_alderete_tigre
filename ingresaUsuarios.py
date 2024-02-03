@@ -48,7 +48,9 @@ def insertar_usuario(nombre_apellido, contraseña, confirmar_contraseña, fecha_
         st.error(f"Error al registrar el usuario: {e}")
 
 def ingresa_usuario():
-    st.title("""Crear Usuario \n * Ingrese los datos del usuario, incluyendo nombre y apellido, email, contraseña, verificacion de contraseña, fecha de nacimiento, DNI, domicilio y rol (empleado o admin). \n * Presione 'Registrar Usuario' para guardar la información.""")
+    # st.title("""Crear Usuario \n * Ingrese los datos del usuario, incluyendo nombre y apellido, email, contraseña, verificacion de contraseña, fecha de nacimiento, DNI, domicilio y rol (empleado o admin). \n * Presione 'Registrar Usuario' para guardar la información.""")
+
+    st.title('Ingresa Usuario')
 
     # Campos para ingresar los datos del nuevo usuario
     nombre_apellido = st.text_input("Nombre y Apellido:")

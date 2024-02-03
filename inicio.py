@@ -9,6 +9,7 @@ from ingresaUsuarios import ingresa_usuario
 from visualizaUsuarios import main as visualiza_usuarios
 from stockTanque import main as stockTanque
 from restaCombustibleInspectores import main as stockColectivos
+from ingresaInspectoresYChoferes import main as ingresaInspectoresYChoferes
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -76,17 +77,20 @@ def main():
         st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Resta de Combustible", "Stock de Tanque", "Nuevo Usuario", "Visualiza Usuarios"])
-            if selected_option == "Nuevo Usuario":
-                ingresa_usuario()
-            if selected_option == "Visualiza Usuarios":
-                visualiza_usuarios()
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Resta de Combustible", "Stock de Tanque", "Choferes e Inspectores","Usuarios"])
+            if selected_option == "Usuarios":
+                with st.expander('Nuevo Usuario'):
+                    ingresa_usuario()
+                with st.expander('Visualiza Usuarios'):
+                    visualiza_usuarios()
             if selected_option == "Carga de Combustible":
                 revisionFosa()
             if selected_option == "Stock de Tanque":
                 stockTanque()
             if selected_option == "Resta de Combustible":
                 stockColectivos()
+            if selected_option == "Choferes e Inspectores":
+                ingresaInspectoresYChoferes()
             
             # if selected_option == "Inicio":
             #     texto_inicio()            
