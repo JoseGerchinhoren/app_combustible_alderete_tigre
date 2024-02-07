@@ -6,7 +6,6 @@ from config import cargar_configuracion
 import io
 import boto3
 from botocore.exceptions import NoCredentialsError
-import json
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -31,9 +30,36 @@ numeros_colectivos = [
 def restaCombustibleCoche():
     usuario = st.session_state.user_nombre_apellido
 
-    coche = st.selectbox("Seleccione número de coche", numeros_colectivos)
+    # Cargar el archivo litros_colectivos.csv desde S3
+    try:
+        response_litros = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.csv")
+        litros_colectivos_df = pd.read_csv(io.BytesIO(response_litros['Body'].read()))
+    except s3.exceptions.NoSuchKey:
+        st.warning("No se encontró el archivo litros_colectivos.csv en S3")
+        litros_colectivos_df = pd.DataFrame()
 
-    chofer = st.text_input("Seleccione el Chofer")
+    # Filtrar los números de colectivos disponibles
+    colectivos_disponibles = litros_colectivos_df[litros_colectivos_df['estado'] == True]['idColectivo'].tolist()
+
+    if len(colectivos_disponibles) > 0:
+        # Mostrar los números de colectivos disponibles en el selectbox
+        coche = st.selectbox("Seleccione número de coche", ["Colectivos"] + colectivos_disponibles)
+    else:
+        st.warning("No hay colectivos disponibles en este momento.")
+
+    # Obtener los valores de ApellidoNombre del archivo CSV en S3 y ordenarlos alfabéticamente
+    try:
+        response_inspectores = s3.get_object(Bucket=bucket_name, Key="inspectoresChoferes.csv")
+        inspectores_df = pd.read_csv(io.BytesIO(response_inspectores['Body'].read()))
+        # Ordenar alfabéticamente los apellidos y nombres
+        inspectores_df = inspectores_df.sort_values(by='apellidoNombre')
+        opciones_chofer = inspectores_df['apellidoNombre'].tolist()
+    except s3.exceptions.NoSuchKey:
+        st.warning("No se encontró el archivo inspectoresChoferes.csv en S3")
+        opciones_chofer = []
+
+    # Crear el select box para seleccionar el chofer
+    chofer = st.selectbox("Seleccione el Chofer", ["Choferes"] + opciones_chofer)
 
     servicioCompleto = st.checkbox("¿Completo el Servicio?")
 
@@ -41,11 +67,22 @@ def restaCombustibleCoche():
 
     observaciones = st.text_input('Ingrese un comentario, si se desea ')
 
+    # Verificar si se han seleccionado valores válidos antes de guardar la carga de combustible
+    if coche == "Colectivos":
+        st.warning("Por favor seleccione un número de coche.")
+        return
+    if chofer == "Choferes":
+        st.warning("Por favor seleccione un chofer.")
+        return
+    if litrosRestados is None or litrosRestados == 0:
+        st.warning("Por favor ingrese la cantidad aproximada de combustible consumido en litros.")
+        return
+
     # Obtener fecha y hora actual en formato de Argentina
     fecha = obtener_fecha_argentina().strftime(formato_fecha)
     hora = obtener_fecha_argentina().strftime(formato_hora)
 
-            # Crear un diccionario con la información del formulario
+    # Crear un diccionario con la información del formulario
     data = {
         'coche': coche,
         'fecha': fecha,
@@ -60,7 +97,7 @@ def restaCombustibleCoche():
     # Botón para realizar acciones asociadas a "Carga en Tanque"
     if st.button('Guardar Carga de Combustible en Tanque'):
         guardar_carga_empresa_en_s3(data, csv_filename)
-
+        
 def guardar_carga_empresa_en_s3(data, filename):
     try:
         # Leer el archivo CSV desde S3 o crear un DataFrame vacío con las columnas definidas
@@ -108,8 +145,8 @@ def guardar_carga_empresa_en_s3(data, filename):
 def actualizar_litros_en_colectivo(coche, litros):
     try:
         # Obtener el contenido actual del archivo desde S3
-        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
-        litros_colectivos = json.loads(response['Body'].read().decode())
+        response_litros = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.csv")
+        litros_colectivos = pd.read_csv(io.BytesIO(response_litros['Body'].read()))
 
         # Verificar si litrosRestados es None o un valor válido
         if litros is not None:
@@ -118,7 +155,9 @@ def actualizar_litros_en_colectivo(coche, litros):
             litros_colectivos[str(coche)] = min(300, litros_colectivos[str(coche)])  # Limitar a 300 litros
 
             # Actualizar el contenido del archivo en S3
-            s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
+            with io.StringIO() as csv_buffer:
+                litros_colectivos.to_csv(csv_buffer, index=False)
+                s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key="litros_colectivos.csv")
 
             st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {litros_colectivos[str(coche)]} litros.")
         else:

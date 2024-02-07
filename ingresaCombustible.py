@@ -6,7 +6,6 @@ import io
 import boto3
 from botocore.exceptions import NoCredentialsError
 from visualizaCombustible import main as visualizaCombustible
-import json
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -131,31 +130,6 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
     except Exception as e:
         st.error(f"Error al guardar la información: {e}")
 
-def actualizar_litros_en_colectivo(coche, litros):
-    try:
-        # Obtener el contenido actual del archivo desde S3
-        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
-        litros_colectivos = json.loads(response['Body'].read().decode())
-
-        # Actualizar los litros
-        litros_colectivos[str(coche)] += litros
-        litros_colectivos[str(coche)] = max(0, litros_colectivos[str(coche)])  # No permitir litros negativos
-        litros_colectivos[str(coche)] = min(500, litros_colectivos[str(coche)])  # Limitar a 300 litros
-
-        # Actualizar el contenido del archivo en S3
-        s3.put_object(Body=json.dumps(litros_colectivos), Bucket=bucket_name, Key="litros_colectivos.json")
-
-        st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {litros_colectivos[str(coche)]} litros.")
-
-    except NoCredentialsError:
-        st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
-
-    except ValueError:
-        st.error("Error al procesar el archivo litros_colectivos.json.")
-
-    except Exception as e:
-        st.error(f"Error al actualizar litros en colectivo: {e}")
-
 def obtener_contador_tanque_s3():
     try:
         response = s3.get_object(Bucket=bucket_name, Key="contador_tanque_combustible.txt")
@@ -173,13 +147,6 @@ def actualizar_contador_tanque_s3(nuevo_valor):
         s3.put_object(Body=str(nuevo_valor), Bucket=bucket_name, Key="contador_tanque_combustible.txt")
     except Exception as e:
         st.error(f"Error al actualizar el contador del tanque en S3: {e}")
-    
-def obtener_colectivos_bajos_litros(litros_colectivos, umbral_litros=100):
-    """
-    Función para obtener los colectivos que tienen menos de cierta cantidad de litros.
-    """
-    colectivos_bajos_litros = [colectivo for colectivo, litros in litros_colectivos.items() if litros < umbral_litros]
-    return colectivos_bajos_litros
 
 def main():
     # Cargar el DataFrame desde S3
@@ -197,7 +164,7 @@ def main():
         st.warning("No se encontró el archivo stock_tanque_config.txt en S3. No hay datos de litros disponibles.")
 
     # Mostrar información sobre colectivos con menos de 50 litros
-    litros_colectivos = obtener_litros_colectivos()
+    litros_colectivos = obtener_litros_colectivos(s3, bucket_name)
     colectivos_bajos_litros = obtener_colectivos_bajos_litros(litros_colectivos)
 
     if colectivos_bajos_litros:
@@ -321,9 +288,11 @@ def main():
                 # Recargar la página
                 st.experimental_rerun()
 
+    # Utilizando st.expander para la sección "Visualiza Cantidad de Combustible en Colectivos"
     with st.expander('Visualiza Cantidad de Combustible en Colectivos'):
         visualizar_litros_colectivos()
 
+    # Utilizando st.expander para la sección "Visualiza Cargas de Combustible"
     with st.expander('Visualiza Cargas de Combustible'):
         visualizaCombustible()
     
@@ -342,36 +311,127 @@ def validar_campos_surtidor(coche, numero_precinto_viejo, litros_cargados, preci
 
     return campos_faltantes_surtidor
 
-def obtener_litros_colectivos():
+def actualizar_litros_en_colectivo(coche, litros, s3, bucket_name):
     try:
         # Obtener el contenido actual del archivo desde S3
-        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.json")
-        litros_colectivos = json.loads(response['Body'].read().decode())
+        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.csv")
+        df_litros_colectivos = pd.read_csv(response['Body'])
+
+        # Actualizar los litros
+        df_litros_colectivos.loc[df_litros_colectivos['idColectivo'] == coche, 'litros'] += litros
+        df_litros_colectivos['litros'] = df_litros_colectivos['litros'].clip(lower=0, upper=500)  # No permitir litros negativos y limitar a 500 litros
+
+        # Actualizar el contenido del archivo en S3
+        with io.StringIO() as csv_buffer:
+            df_litros_colectivos.to_csv(csv_buffer, index=False)
+            s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key="litros_colectivos.csv")
+
+        st.success(f"Se actualizó el stock de combustible del colectivo {coche}. Nuevo stock: {df_litros_colectivos.loc[df_litros_colectivos['idColectivo'] == coche, 'litros'].values[0]} litros.")
+
+    except NoCredentialsError:
+        st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
+
+    except Exception as e:
+        st.error(f"Error al actualizar litros en colectivo: {e}")
+
+def obtener_litros_colectivos(s3, bucket_name):
+    try:
+        # Obtener el contenido actual del archivo desde S3
+        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.csv")
+        df_litros_colectivos = pd.read_csv(response['Body'])
+        
+        # Convertir DataFrame a un diccionario y devolverlo
+        litros_colectivos = df_litros_colectivos.set_index('idColectivo').to_dict(orient='index')
         return litros_colectivos
-    except (s3.exceptions.NoSuchKey, NoCredentialsError, ValueError) as e:
+    except (s3.exceptions.NoSuchKey, NoCredentialsError, pd.errors.EmptyDataError, ValueError) as e:
         st.error(f"Error al obtener datos de litros de colectivos: {e}")
         return {}
 
 def visualizar_litros_colectivos():
     st.title("Litros de Combustible por Colectivo")
 
-    litros_colectivos = obtener_litros_colectivos()
+    litros_colectivos = obtener_litros_colectivos(s3, bucket_name)
 
     if not litros_colectivos:
         st.warning("No se pudieron obtener los datos de litros de colectivos.")
         return
 
-    # Crear un DataFrame a partir del diccionario de litros_colectivos
-    df_litros_colectivos = pd.DataFrame(list(litros_colectivos.items()), columns=['Colectivo', 'Litros'])
+    # Crear un DataFrame con los valores de litros
+    df_litros_colectivos = pd.DataFrame(litros_colectivos).T.reset_index()
+    df_litros_colectivos.columns = ['Colectivo', 'Litros', 'Estado']
 
-    # Ordenar el DataFrame por la columna "Litros" de menor a mayor
-    df_litros_colectivos = df_litros_colectivos.sort_values(by='Litros', ascending=True)
+    # Ordenar el DataFrame por la columna "Litros" de menor a mayor y luego por la columna "Colectivo"
+    df_litros_colectivos = df_litros_colectivos.sort_values(by=['Litros', 'Colectivo'], ascending=[True, True])
 
-    # Aplicar estilo a las celdas según el rango de litros
-    df_litros_colectivos_styled = df_litros_colectivos.style.applymap(colorizar_celda, subset=['Litros'])
+    # Seleccionar las columnas del DataFrame original y luego aplicar estilo
+    df_litros_colectivos_selected = df_litros_colectivos[['Colectivo', 'Litros', 'Estado']]
+    df_litros_colectivos_styled = df_litros_colectivos_selected.style.applymap(colorizar_celda, subset=['Litros'])
 
     # Mostrar el DataFrame ordenado y estilizado
     st.dataframe(df_litros_colectivos_styled)
+
+    st.header('Editar Informacion de Colectivo')
+
+    # Modifica la línea de la creación del selectbox
+    colectivo_a_editar = st.selectbox('Ingrese el número de colectivo a editar', ["Colectivos"] + numeros_colectivos)
+
+    if colectivo_a_editar is not "Colectivos":
+        # Obtener el valor actual del estado
+        estado_actual = litros_colectivos[colectivo_a_editar]['estado'] if colectivo_a_editar in litros_colectivos else False
+
+        if estado_actual == True:
+            estado_actual = 'Disponible'
+
+        else: estado_actual = 'No Disponible'
+
+        # Utilizar el valor actual como valor predeterminado para el radio button
+        nuevo_estado = st.radio('Estado', ['Disponible', 'No Disponible'], index=['Disponible', 'No Disponible'].index(estado_actual))
+
+        if nuevo_estado == 'Disponible':
+            nuevo_estado = True
+        
+        else: nuevo_estado = False
+
+        # Resto del código
+        nuevos_litros = st.number_input('Ingrese nuevos litros ', min_value=0, value=df_litros_colectivos[df_litros_colectivos['Colectivo'] == colectivo_a_editar]['Litros'].iloc[0])
+
+        # Botón para realizar la edición y guardar los cambios
+        if st.button('Guardar Cambios '):
+            editar_colectivo(colectivo_a_editar, nuevos_litros, nuevo_estado, s3, bucket_name)
+            # Recargar la página
+            # st.experimental_rerun()
+    else:
+        st.warning("Por favor, seleccione un número de colectivo para editar.")
+
+def obtener_colectivos_bajos_litros(litros_colectivos, umbral_litros=100):
+    """
+    Función para obtener los colectivos que tienen menos de cierta cantidad de litros.
+    """
+    colectivos_bajos_litros = [colectivo for colectivo, litros_info in litros_colectivos.items() if litros_info['litros'] < umbral_litros]
+    return colectivos_bajos_litros
+
+def editar_colectivo(colectivo, nuevos_litros, nuevo_estado, s3, bucket_name):
+    try:
+        # Obtener el contenido actual del archivo desde S3
+        response = s3.get_object(Bucket=bucket_name, Key="litros_colectivos.csv")
+        df_litros_colectivos = pd.read_csv(response['Body'])
+
+        # Actualizar los litros y el estado del colectivo
+        df_litros_colectivos.loc[df_litros_colectivos['idColectivo'] == colectivo, 'litros'] = nuevos_litros
+        df_litros_colectivos.loc[df_litros_colectivos['idColectivo'] == colectivo, 'estado'] = nuevo_estado
+
+        # Actualizar el contenido del archivo en S3
+        with io.StringIO() as csv_buffer:
+            df_litros_colectivos.to_csv(csv_buffer, index=False)
+            s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key="litros_colectivos.csv")
+
+        st.success(f"Se actualizó la información del colectivo {colectivo}.")
+
+    except NoCredentialsError:
+        st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
+
+    except Exception as e:
+        st.error(f"Error al editar colectivo: {e}")
 
 def colorizar_celda(val):
     if val < 100:
