@@ -4,6 +4,7 @@ import io
 from config import cargar_configuracion
 import boto3
 from datetime import datetime
+import time
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -130,9 +131,47 @@ def editar_carga_combustible():
         
     else: st.warning('Ingrese el idCarga para editar la informacion de la carga')
 
+def eliminar_carga_combustible():
+    st.header('Eliminar Carga de Combustible en Colectivo')
+
+    # Ingresar el idCarga a eliminar
+    id_carga_eliminar = st.number_input('Ingrese el idCarga a eliminar', value=None, min_value=0)
+
+    if id_carga_eliminar:
+        st.error(f'¿Está seguro de eliminar la carga de combustible con idCarga {id_carga_eliminar}?')
+
+        if st.button('Eliminar Carga'):
+            # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
+            csv_file_key = 'cargasCombustible.csv'
+            response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
+            cargas_combustible_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+
+            # Verificar si la carga con el idCarga a eliminar existe en el DataFrame
+            if id_carga_eliminar in cargas_combustible_df['idCarga'].values:
+                # Eliminar la carga de combustible con el idCarga especificado
+                cargas_combustible_df = cargas_combustible_df[cargas_combustible_df['idCarga'] != id_carga_eliminar]
+
+                # Guardar el DataFrame actualizado en S3
+                with io.StringIO() as csv_buffer:
+                    cargas_combustible_df.to_csv(csv_buffer, index=False)
+                    s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=csv_file_key)
+
+                st.success(f"¡Carga de combustible con idCarga {id_carga_eliminar} eliminada correctamente!")
+
+                # Esperar 2 segundos antes de recargar la aplicación
+                time.sleep(2)
+                
+                # Recargar la aplicación
+                st.rerun()
+            else:
+                st.error(f"No se encontró ninguna carga de combustible con el idCarga {id_carga_eliminar}")
+    else:
+        st.error('Ingrese el idCarga para eliminar la carga')
+
 def main():
     visualizar_cargas_combustible()
     editar_carga_combustible()
+    eliminar_carga_combustible()
 
 if __name__ == "__main__":
     main()
