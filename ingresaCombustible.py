@@ -6,6 +6,7 @@ import io
 import boto3
 from botocore.exceptions import NoCredentialsError
 from visualizaCombustible import main as visualizaCombustible
+import time
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -214,6 +215,11 @@ def main():
                     'usuario': usuario,
                 }
                 guardar_carga_empresa_en_s3(data_surtidor, csv_filename, 'Surtidor')
+                # Esperar 2 segundos antes de recargar la aplicación
+                time.sleep(2)
+                
+                # Recargar la aplicación
+                st.rerun()
 
     # Utilizando st.expander para la sección "Carga en Tanque"
     with st.expander('Carga en Tanque'):
@@ -280,8 +286,11 @@ def main():
                 # Actualizar el contador del tanque en S3
                 actualizar_contador_tanque_s3(contadorLitrosCierre)
 
-                # Recargar la página
-                st.experimental_rerun()
+                # Esperar 2 segundos antes de recargar la aplicación
+                time.sleep(2)
+                
+                # Recargar la aplicación
+                st.rerun()
 
     # Utilizando st.expander para la sección "Visualiza Cantidad de Combustible en Colectivos"
     with st.expander('Visualiza Cantidad de Combustible en Colectivos'):

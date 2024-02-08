@@ -125,6 +125,10 @@ def editar_carga_combustible():
 
                 st.success("¡Carga de combustible actualizada correctamente!")
 
+                # Esperar 2 segundos antes de recargar la aplicación
+                time.sleep(2)
+                
+                # Recargar la aplicación
                 st.rerun()
         else:
             st.warning(f"No se encontró ninguna carga de combustible con el idCarga {id_carga_editar}")
