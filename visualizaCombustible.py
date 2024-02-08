@@ -73,8 +73,66 @@ def visualizar_cargas_combustible():
     # Mostrar el DataFrame de cargas de combustible
     st.dataframe(cargas_combustible_df)
 
+def editar_carga_combustible():
+    st.header('Editar Carga de Combustible en Colectivo')
+
+    # Ingresar el idCarga a editar
+    id_carga_editar = st.number_input('Ingrese el idCarga a editar', value=None, min_value=0)
+
+    if id_carga_editar:
+
+        # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
+        csv_file_key = 'cargasCombustible.csv'
+        response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
+        cargas_combustible_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+
+        # Filtrar el DataFrame para obtener la carga específica por idCarga
+        carga_editar_df = cargas_combustible_df[cargas_combustible_df['idCarga'] == id_carga_editar]
+
+        if not carga_editar_df.empty:
+            # Mostrar la información actual de la carga
+            st.write("Información actual de la carga:")
+            st.dataframe(carga_editar_df)
+
+            # Mostrar campos para editar cada variable
+            for column in carga_editar_df.columns:
+                if column in ['idCarga', 'coche', 'fecha', 'hora', 'contadorLitrosInicio', 'contadorLitrosCierre', 'litrosCargados', 'numeroPrecintoViejo', 'numeroPrecintoNuevo', 'observacion', 'usuario', 'lugarCarga', 'precio']:
+                    valor_actual = carga_editar_df.iloc[0][column]
+
+                    if column == 'lugarCarga':
+                        opciones_lugar_carga = ['Surtidor', 'Tanque']
+                        nuevo_valor = st.selectbox(f"Nuevo valor para {column}", opciones_lugar_carga, index=opciones_lugar_carga.index(valor_actual))
+                    elif column in ['fecha', 'hora']:
+                        if isinstance(valor_actual, str):
+                            nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual)
+                        else:
+                            nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime('%d/%m/%Y'))
+                    else:
+                        nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
+
+                    carga_editar_df.at[carga_editar_df.index[0], column] = nuevo_valor
+
+            # Botón para guardar los cambios
+            if st.button("Guardar modificación"):
+                # Actualizar el DataFrame original con los cambios realizados
+                cargas_combustible_df.update(carga_editar_df)
+
+                # Guardar el DataFrame actualizado en S3
+                with io.StringIO() as csv_buffer:
+                    cargas_combustible_df.to_csv(csv_buffer, index=False)
+                    s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=csv_file_key)
+
+                st.success("¡Carga de combustible actualizada correctamente!")
+
+                st.rerun()
+        else:
+            st.warning(f"No se encontró ninguna carga de combustible con el idCarga {id_carga_editar}")
+        
+    else: st.warning('Ingrese el idCarga para editar la informacion de la carga')
+
 def main():
     visualizar_cargas_combustible()
+    editar_carga_combustible()
 
 if __name__ == "__main__":
     main()

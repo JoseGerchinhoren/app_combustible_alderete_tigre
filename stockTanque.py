@@ -111,7 +111,7 @@ def guardar_stock_tanque_en_s3(data, filename):
         st.error(f"Error al guardar la información: {e}")
 
 def visualizaStockTanque():
-    st.title("Visualizar Stock de Combustible en Tanque")
+    st.title("Visualizar Cargas de Combustible en Tanque")
 
     try:
         response_stock_tanque = s3.get_object(Bucket=bucket_name, Key=csv_filename)
@@ -156,7 +156,7 @@ def main():
         ingresaStockTanque()
           
     # Expansor para visualizar el stock del tanque
-    with st.expander('Visualizar Stock de Tanque'):
+    with st.expander('Visualizar Cargas en Tanque'):
          visualizaStockTanque()
 
 if __name__ == "__main__":

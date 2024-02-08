@@ -217,6 +217,6 @@ def main():
     with st.expander('Restar Combustible en Colectivo'): restaCombustibleCoche()
 
     with st.expander('Visualizar Restas de Combustible en Colectivos'): visualizaRestaCombustible()
-
+    
 if __name__ == "__main__":
     main()

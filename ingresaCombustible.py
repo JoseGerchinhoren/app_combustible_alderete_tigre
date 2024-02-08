@@ -120,7 +120,7 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
         # Actualizar litros en el archivo litros_colectivos
-        actualizar_litros_en_colectivo(data['coche'], data['litrosCargados'])
+        actualizar_litros_en_colectivo(data['coche'], data['litrosCargados'], s3, bucket_name)
 
         st.success("Información guardada exitosamente!")
 
@@ -217,7 +217,7 @@ def main():
 
     # Utilizando st.expander para la sección "Carga en Tanque"
     with st.expander('Carga en Tanque'):
-        st.info(f"{current_litros} Litros en Tanque")
+        st.info(f"{current_litros} Litros en Tanque de Empresa")
 
         coche_tanque = st.selectbox("Seleccione número de coche: ", numeros_colectivos)
 
@@ -228,11 +228,6 @@ def main():
         numeroPrecintoViejo = st.number_input('Ingrese el numero de precinto viejo ', min_value=0, value=ultimo_numero_precinto or None, step=1)
 
         contadorLitrosInicio = st.number_input('Contador Inicio', min_value=0, value=obtener_contador_tanque_s3(), step=1)
-
-        # # Obtener el contador del tanque desde S3
-        # contadorLitrosInicio = obtener_contador_tanque_s3()
-
-        # st.write(f"Contador Inicio: {contadorLitrosInicio}")
 
         litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=None, step=1)
 
@@ -392,14 +387,11 @@ def visualizar_litros_colectivos():
         
         else: nuevo_estado = False
 
-        # Resto del código
         nuevos_litros = st.number_input('Ingrese nuevos litros ', min_value=0, value=df_litros_colectivos[df_litros_colectivos['Colectivo'] == colectivo_a_editar]['Litros'].iloc[0])
 
         # Botón para realizar la edición y guardar los cambios
         if st.button('Guardar Cambios '):
             editar_colectivo(colectivo_a_editar, nuevos_litros, nuevo_estado, s3, bucket_name)
-            # Recargar la página
-            # st.experimental_rerun()
     else:
         st.warning("Por favor, seleccione un número de colectivo para editar.")
 
