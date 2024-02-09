@@ -374,35 +374,37 @@ def visualizar_litros_colectivos():
     # Mostrar el DataFrame ordenado y estilizado
     st.dataframe(df_litros_colectivos_styled)
 
-    st.header('Editar Informacion de Colectivo')
+    # Verificar si el usuario es admin
+    if st.session_state.user_rol == "admin":
+        st.header('Editar Informacion de Colectivo')
 
-    # Modifica la línea de la creación del selectbox
-    colectivo_a_editar = st.selectbox('Ingrese el número de colectivo a editar', ["Colectivos"] + numeros_colectivos)
+        # Modifica la línea de la creación del selectbox
+        colectivo_a_editar = st.selectbox('Ingrese el número de colectivo a editar', ["Colectivos"] + numeros_colectivos)
 
-    if colectivo_a_editar is not "Colectivos":
-        # Obtener el valor actual del estado
-        estado_actual = litros_colectivos[colectivo_a_editar]['estado'] if colectivo_a_editar in litros_colectivos else False
+        if colectivo_a_editar is not "Colectivos":
+            # Obtener el valor actual del estado
+            estado_actual = litros_colectivos[colectivo_a_editar]['estado'] if colectivo_a_editar in litros_colectivos else False
 
-        if estado_actual == True:
-            estado_actual = 'Disponible'
+            if estado_actual == True:
+                estado_actual = 'Disponible'
 
-        else: estado_actual = 'No Disponible'
+            else: estado_actual = 'No Disponible'
 
-        # Utilizar el valor actual como valor predeterminado para el radio button
-        nuevo_estado = st.radio('Estado', ['Disponible', 'No Disponible'], index=['Disponible', 'No Disponible'].index(estado_actual))
+            # Utilizar el valor actual como valor predeterminado para el radio button
+            nuevo_estado = st.radio('Estado', ['Disponible', 'No Disponible'], index=['Disponible', 'No Disponible'].index(estado_actual))
 
-        if nuevo_estado == 'Disponible':
-            nuevo_estado = True
-        
-        else: nuevo_estado = False
+            if nuevo_estado == 'Disponible':
+                nuevo_estado = True
+            
+            else: nuevo_estado = False
 
-        nuevos_litros = st.number_input('Ingrese nuevos litros ', min_value=0, value=df_litros_colectivos[df_litros_colectivos['Colectivo'] == colectivo_a_editar]['Litros'].iloc[0])
+            nuevos_litros = st.number_input('Ingrese nuevos litros ', min_value=0, value=df_litros_colectivos[df_litros_colectivos['Colectivo'] == colectivo_a_editar]['Litros'].iloc[0])
 
-        # Botón para realizar la edición y guardar los cambios
-        if st.button('Guardar Cambios '):
-            editar_colectivo(colectivo_a_editar, nuevos_litros, nuevo_estado, s3, bucket_name)
-    else:
-        st.warning("Por favor, seleccione un número de colectivo para editar.")
+            # Botón para realizar la edición y guardar los cambios
+            if st.button('Guardar Cambios '):
+                editar_colectivo(colectivo_a_editar, nuevos_litros, nuevo_estado, s3, bucket_name)
+        else:
+            st.warning("Por favor, seleccione un número de colectivo para editar.")
 
 def obtener_colectivos_bajos_litros(litros_colectivos, umbral_litros=100):
     """

@@ -317,8 +317,10 @@ def main():
 
     with st.expander('Visualizar Restas de Combustible en Colectivos'): 
         visualizaRestaCombustible()
-        editar_resta_combustible()
-        eliminar_resta_combustible()
+        # Verificar si el usuario es admin
+        if st.session_state.user_rol == "admin":
+            editar_resta_combustible()
+            eliminar_resta_combustible()
 
     
 if __name__ == "__main__":

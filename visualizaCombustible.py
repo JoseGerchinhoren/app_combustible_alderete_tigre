@@ -174,8 +174,10 @@ def eliminar_carga_combustible():
 
 def main():
     visualizar_cargas_combustible()
-    editar_carga_combustible()
-    eliminar_carga_combustible()
-
+    # Verificar si el usuario es admin
+    if st.session_state.user_rol == "admin":
+        editar_carga_combustible()
+        eliminar_carga_combustible()
+        
 if __name__ == "__main__":
     main()
