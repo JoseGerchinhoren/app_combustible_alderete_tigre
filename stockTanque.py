@@ -6,6 +6,7 @@ from config import cargar_configuracion
 import io
 import boto3
 from botocore.exceptions import NoCredentialsError
+import time
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -88,7 +89,7 @@ def guardar_stock_tanque_en_s3(data, filename):
             df_total.to_csv(csv_buffer, index=False)
             s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=filename)
 
-        # Guardar la variable de litros en el archivo stock_tanque_config.txt
+        # Obtener el total actual de litros cargados
         try:
             response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
             current_litros = int(response['Body'].read().decode())
@@ -96,13 +97,19 @@ def guardar_stock_tanque_en_s3(data, filename):
             st.warning("No se encontró el archivo stock_tanque_config.txt en S3. Creando un archivo con valor inicial de litros.")
             current_litros = 0
 
-        # Actualizar la variable de litros
-        current_litros += df_total['litros'].sum()
+        # Actualizar la variable de litros sumando solo los litros cargados en la carga actual
+        current_litros += data['litros']
 
         # Guardar el valor actualizado en el archivo stock_tanque_config.txt en S3
         s3.put_object(Body=str(current_litros), Bucket=bucket_name, Key="stock_tanque_config.txt")
 
         st.success("Información guardada exitosamente!")
+
+        # Esperar 2 segundos antes de recargar la aplicación
+        time.sleep(1)
+        
+        # Recargar la aplicación
+        st.rerun()
 
     except NoCredentialsError:
         st.error("Credenciales de AWS no disponibles. Verifica la configuración.")
@@ -149,6 +156,157 @@ def formatear_fecha(x):
             return x
     else:
         return ''
+    
+def editar_carga_tanque():
+    st.header('Editar Carga de Combustible en Tanque')
+
+    # Ingresar el idStockTanque a editar
+    id_stock_editar = st.number_input('Ingrese el idStockTanque a editar', value=None, min_value=0)
+
+    if id_stock_editar:
+
+        # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
+        try:
+            response = s3.get_object(Bucket=bucket_name, Key=csv_filename)
+            stock_tanque_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+        except s3.exceptions.NoSuchKey:
+            st.warning("No se encontró el archivo CSV en S3.")
+            return
+
+        # Filtrar el DataFrame para obtener la carga específica por idStockTanque
+        carga_editar_df = stock_tanque_df[stock_tanque_df['idStockTanque'] == id_stock_editar]
+
+        if not carga_editar_df.empty:
+            # Mostrar la información actual de la carga
+            st.write("Información actual de la carga:")
+            st.dataframe(carga_editar_df)
+
+            # Mostrar campos para editar cada variable
+            for column in carga_editar_df.columns:
+                if column in ['idStockTanque', 'litros', 'fecha', 'hora', 'comentario', 'usuario']:
+                    valor_actual = carga_editar_df.iloc[0][column]
+
+                    if column in ['fecha', 'hora']:
+                        if isinstance(valor_actual, str):
+                            nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual)
+                        else:
+                            nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime('%d/%m/%Y'))
+                    else:
+                        nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
+
+                    carga_editar_df.at[carga_editar_df.index[0], column] = nuevo_valor
+
+            # Botón para guardar los cambios
+            if st.button("Guardar modificación"):
+                # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
+                try:
+                    response = s3.get_object(Bucket=bucket_name, Key=csv_filename)
+                    stock_tanque_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+                except s3.exceptions.NoSuchKey:
+                    st.warning("No se encontró el archivo CSV en S3.")
+
+                # Obtener los litros originales antes de la edición
+                litros_originales = stock_tanque_df.iloc[0]['litros']
+
+                # Actualizar el DataFrame original con los cambios realizados
+                stock_tanque_df.loc[stock_tanque_df['idStockTanque'] == id_stock_editar] = carga_editar_df.iloc[0].values
+
+                # Guardar el DataFrame actualizado en S3
+                with io.StringIO() as csv_buffer:
+                    stock_tanque_df.to_csv(csv_buffer, index=False)
+                    s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=csv_filename)
+
+                # Calcular la diferencia de litros
+                diferencia_litros = int(carga_editar_df.iloc[0]['litros']) - int(litros_originales)
+
+                if diferencia_litros != 0:
+                    # Leer el archivo stock_tanque_config.txt para obtener los litros actuales en el tanque
+                    try:
+                        response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
+                        current_litros = int(response['Body'].read().decode())
+                    except s3.exceptions.NoSuchKey:
+                        st.warning("No se encontró el archivo stock_tanque_config.txt en S3. Creando un archivo con valor inicial de litros.")
+                        current_litros = 0
+
+                    # Actualizar la variable de litros según la diferencia
+                    current_litros += diferencia_litros  # Restamos la diferencia para reflejar el cambio
+
+                    # Guardar el valor actualizado en el archivo stock_tanque_config.txt en S3
+                    try:
+                        s3.put_object(Body=str(current_litros), Bucket=bucket_name, Key="stock_tanque_config.txt")
+                        st.success("¡Valor de litros en el tanque actualizado correctamente!")
+                    except Exception as e:
+                        st.error(f"Error al actualizar el archivo stock_tanque_config.txt: {e}")
+                else:
+                    st.warning('La diferencia de litros es igual a 0')
+
+                st.success("¡Carga de combustible actualizada correctamente!")
+
+                # Esperar 2 segundos antes de recargar la aplicación
+                time.sleep(2)
+                
+                # Recargar la aplicación
+                st.rerun()
+        else:
+            st.warning(f"No se encontró ninguna carga de combustible con el idStockTanque {id_stock_editar}")
+
+    else:
+        st.warning('Ingrese el idStockTanque para editar la información de la carga')
+
+def eliminar_carga_combustible():
+    st.header('Eliminar Carga de Combustible en Tanque')
+
+    # Ingresar el idStockTanque a eliminar
+    id_stock_eliminar = st.number_input('Ingrese el idStockTanque a eliminar', value=None, min_value=0)
+
+    if id_stock_eliminar:
+        st.error(f'¿Está seguro de eliminar la carga de combustible con idStockTanque {id_stock_eliminar}?')
+
+        if st.button('Eliminar Carga'):
+            try:
+                # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
+                response = s3.get_object(Bucket=bucket_name, Key=csv_filename)
+                stock_tanque_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+
+                # Verificar si la carga con el idStockTanque a eliminar existe en el DataFrame
+                if id_stock_eliminar in stock_tanque_df['idStockTanque'].values:
+                    # Obtener los litros de la carga a eliminar
+                    litros_eliminar = stock_tanque_df.loc[stock_tanque_df['idStockTanque'] == id_stock_eliminar, 'litros'].values[0]
+
+                    # Eliminar la carga de combustible con el idStockTanque especificado
+                    stock_tanque_df = stock_tanque_df[stock_tanque_df['idStockTanque'] != id_stock_eliminar]
+
+                    # Guardar el DataFrame actualizado en S3
+                    with io.StringIO() as csv_buffer:
+                        stock_tanque_df.to_csv(csv_buffer, index=False)
+                        s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket_name, Key=csv_filename)
+
+                    # Leer el archivo stock_tanque_config.txt para obtener los litros actuales en el tanque
+                    try:
+                        response = s3.get_object(Bucket=bucket_name, Key="stock_tanque_config.txt")
+                        current_litros = int(response['Body'].read().decode())
+                    except s3.exceptions.NoSuchKey:
+                        st.warning("No se encontró el archivo stock_tanque_config.txt en S3. Creando un archivo con valor inicial de litros.")
+                        current_litros = 0
+
+                    # Restar los litros de la carga eliminada
+                    current_litros -= litros_eliminar
+
+                    # Guardar el valor actualizado en el archivo stock_tanque_config.txt en S3
+                    s3.put_object(Body=str(current_litros), Bucket=bucket_name, Key="stock_tanque_config.txt")
+
+                    st.success(f"¡Carga de combustible con idStockTanque {id_stock_eliminar} eliminada correctamente!")
+                    # Esperar 2 segundos antes de recargar la aplicación
+                    time.sleep(2)
+                    
+                    # Recargar la aplicación
+                    st.rerun()
+                else:
+                    st.error(f"No se encontró ninguna carga de combustible con el idStockTanque {id_stock_eliminar}")
+            except s3.exceptions.NoSuchKey:
+                st.warning("No se encontró el archivo CSV en S3.")
+    else:
+        st.error('Ingrese el idStockTanque para eliminar la carga')
 
 def main():
     # Expansor para ingresar stock en litros para el tanque
@@ -157,7 +315,11 @@ def main():
           
     # Expansor para visualizar el stock del tanque
     with st.expander('Visualizar Cargas en Tanque'):
-         visualizaStockTanque()
+        visualizaStockTanque()
+         # Verificar si el usuario es admin
+        if st.session_state.user_rol == "admin":
+            editar_carga_tanque()
+            eliminar_carga_combustible()
 
 if __name__ == "__main__":
     main()
