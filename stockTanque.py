@@ -206,7 +206,7 @@ def editar_carga_tanque():
                     st.warning("No se encontró el archivo CSV en S3.")
 
                 # Obtener los litros originales antes de la edición
-                litros_originales = stock_tanque_df.iloc[0]['litros']
+                litros_originales = stock_tanque_df.loc[stock_tanque_df['idStockTanque'] == id_stock_editar, 'litros'].iloc[0]
 
                 # Actualizar el DataFrame original con los cambios realizados
                 stock_tanque_df.loc[stock_tanque_df['idStockTanque'] == id_stock_editar] = carga_editar_df.iloc[0].values
