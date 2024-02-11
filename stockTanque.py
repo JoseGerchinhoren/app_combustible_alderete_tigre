@@ -7,6 +7,7 @@ import io
 import boto3
 from botocore.exceptions import NoCredentialsError
 import time
+import re
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -126,6 +127,11 @@ def visualizaStockTanque():
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo stock_tanque.csv en S3")
 
+    # Reemplazar comas por puntos en columnas numéricas
+    numeric_columns = ['idStockTanque', 'litros']  # Agrega aquí más columnas si es necesario
+    for column in numeric_columns:
+        stock_tanque_df[column] = stock_tanque_df[column].astype(str).str.replace(',', '.', regex=False)
+
     # Filtro de fecha con checkbox
     if st.checkbox("Filtrar por Fecha"):
         # Convierte las fechas al formato datetime solo si no lo han sido
@@ -191,6 +197,23 @@ def editar_carga_tanque():
                             nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual)
                         else:
                             nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime('%d/%m/%Y'))
+                        
+                        # Validar formato de fecha y hora
+                        if column == 'fecha':
+                            if re.match(r'^\d{2}/\d{2}/\d{4}$', nuevo_valor) is None:
+                                st.warning(f"Formato incorrecto para {column}. Use el formato DD/MM/AAAA.")
+                                return
+                        elif column == 'hora':
+                            if re.match(r'^\d{2}:\d{2}$', nuevo_valor) is None:
+                                st.warning(f"Formato incorrecto para {column}. Use el formato HH:MM.")
+                                return
+                    elif column == 'litros':
+                        nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
+                        
+                        # Validar si es un número
+                        if not nuevo_valor.isdigit():
+                            st.warning("Los litros deben ser un valor numérico.")
+                            return
                     else:
                         nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
 
