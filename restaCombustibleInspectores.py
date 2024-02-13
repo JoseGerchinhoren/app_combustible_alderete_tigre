@@ -7,6 +7,7 @@ import io
 import boto3
 from botocore.exceptions import NoCredentialsError
 import time
+import re
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -221,9 +222,13 @@ def editar_resta_combustible():
     if id_resta_editar:
 
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
-        csv_file_key = 'restaCombustible.csv'
-        response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
-        restas_combustible_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+        try:
+            csv_file_key = 'restaCombustible.csv'
+            response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
+            restas_combustible_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+        except s3.exceptions.NoSuchKey:
+            st.warning("No se encontró el archivo CSV en S3.")
+            return
 
         # Filtrar el DataFrame para obtener la resta específica por idResta
         resta_editar_df = restas_combustible_df[restas_combustible_df['idResta'] == id_resta_editar]
@@ -246,6 +251,23 @@ def editar_resta_combustible():
                             nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual)
                         else:
                             nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime('%d/%m/%Y'))
+
+                        # Validar formato de fecha y hora
+                        if column == 'fecha':
+                            if re.match(r'^\d{2}/\d{2}/\d{4}$', nuevo_valor) is None:
+                                st.warning(f"Formato incorrecto para {column}. Use el formato DD/MM/AAAA.")
+                                return
+                        elif column == 'hora':
+                            if re.match(r'^\d{2}:\d{2}$', nuevo_valor) is None:
+                                st.warning(f"Formato incorrecto para {column}. Use el formato HH:MM.")
+                                return
+                    elif column == 'litrosRestados':
+                        nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
+                        
+                        # Validar si es un número
+                        if not nuevo_valor.isdigit():
+                            st.warning("Los litros restados deben ser un valor numérico.")
+                            return
                     else:
                         nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
 

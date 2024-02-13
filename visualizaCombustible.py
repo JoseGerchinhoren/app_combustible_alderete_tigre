@@ -5,6 +5,7 @@ from config import cargar_configuracion
 import boto3
 from datetime import datetime
 import time
+import re
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -29,7 +30,7 @@ def formatear_fecha(x):
             return x
     else:
         return ''
-
+    
 def visualizar_cargas_combustible():
     st.title("Visualizar Cargas de Combustible")
 
@@ -40,6 +41,12 @@ def visualizar_cargas_combustible():
         cargas_combustible_df = pd.read_csv(io.BytesIO(response_cargas_combustible['Body'].read()))
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo cargasCombustible.csv en S3")
+
+    # Reemplazar comas por puntos en campos numéricos
+    numeric_columns = ['idCarga', 'coche', 'contadorLitrosInicio', 'contadorLitrosCierre', 'litrosCargados', 'numeroPrecintoViejo', 'numeroPrecintoNuevo', 'precio']
+    for column in numeric_columns:
+        # Convertir la columna a tipo string antes de reemplazar comas por puntos
+        cargas_combustible_df[column] = cargas_combustible_df[column].astype(str).str.replace(',', '.', regex=False)
 
     # Filtrar por número de coche
     numero_coche = st.selectbox("Filtrar por Número de Coche", ['Todos'] + sorted(numeros_colectivos))
@@ -74,6 +81,8 @@ def visualizar_cargas_combustible():
     # Mostrar el DataFrame de cargas de combustible
     st.dataframe(cargas_combustible_df)
 
+import re
+
 def editar_carga_combustible():
     st.header('Editar Carga de Combustible en Colectivo')
 
@@ -97,21 +106,29 @@ def editar_carga_combustible():
 
             # Mostrar campos para editar cada variable
             for column in carga_editar_df.columns:
-                if column in ['idCarga', 'coche', 'fecha', 'hora', 'contadorLitrosInicio', 'contadorLitrosCierre', 'litrosCargados', 'numeroPrecintoViejo', 'numeroPrecintoNuevo', 'observacion', 'usuario', 'lugarCarga', 'precio']:
-                    valor_actual = carga_editar_df.iloc[0][column]
+                valor_actual = carga_editar_df.iloc[0][column]
 
-                    if column == 'lugarCarga':
-                        opciones_lugar_carga = ['Surtidor', 'Tanque']
-                        nuevo_valor = st.selectbox(f"Nuevo valor para {column}", opciones_lugar_carga, index=opciones_lugar_carga.index(valor_actual))
-                    elif column in ['fecha', 'hora']:
-                        if isinstance(valor_actual, str):
-                            nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual)
-                        else:
-                            nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime('%d/%m/%Y'))
-                    else:
-                        nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
+                if column in ['idCarga', 'coche', 'contadorLitrosInicio', 'contadorLitrosCierre', 'litrosCargados', 'numeroPrecintoViejo', 'numeroPrecintoNuevo', 'precio']:
+                    nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
+                    # Verificar si es un número
+                    if not nuevo_valor.isdigit():
+                        st.warning(f"El valor para {column} debe ser un número.")
+                        continue  # Salta a la próxima iteración si no es un número
+                elif column == 'lugarCarga':
+                    opciones_lugar_carga = ['Surtidor', 'Tanque']
+                    nuevo_valor = st.selectbox(f"Nuevo valor para {column}", opciones_lugar_carga, index=opciones_lugar_carga.index(valor_actual))
+                elif column in ['fecha', 'hora']:
+                    formato = '%d/%m/%Y' if column == 'fecha' else '%H:%M'
+                    nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime(formato) if isinstance(valor_actual, pd.Timestamp) else valor_actual)
+                    # Verificar el formato de la fecha o hora ingresada
+                    if not re.match(r'\d{2}/\d{2}/\d{4}', nuevo_valor) and column == 'fecha':
+                        st.warning("Formato incorrecto para fecha. Use el formato DD/MM/AAAA.")
+                    elif not re.match(r'\d{2}:\d{2}', nuevo_valor) and column == 'hora':
+                        st.warning("Formato incorrecto para hora. Use el formato HH:MM.")
+                else:
+                    nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
 
-                    carga_editar_df.at[carga_editar_df.index[0], column] = nuevo_valor
+                carga_editar_df.at[carga_editar_df.index[0], column] = nuevo_valor
 
             # Botón para guardar los cambios
             if st.button("Guardar modificación"):
@@ -133,7 +150,8 @@ def editar_carga_combustible():
         else:
             st.warning(f"No se encontró ninguna carga de combustible con el idCarga {id_carga_editar}")
         
-    else: st.warning('Ingrese el idCarga para editar la informacion de la carga')
+    else: 
+        st.warning('Ingrese el idCarga para editar la información de la carga')
 
 def eliminar_carga_combustible():
     st.header('Eliminar Carga de Combustible en Colectivo')
