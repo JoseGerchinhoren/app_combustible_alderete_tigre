@@ -27,8 +27,8 @@ def insertar_usuario(nombre_apellido, contraseña, confirmar_contraseña, fecha_
         # Obtener el último idUsuario
         ultimo_id = usuarios_df['idUsuario'].max()
 
-        # Si no hay registros, asignar 1 como idUsuario, de lo contrario, incrementar el último idUsuario
-        nuevo_id = 1 if pd.isna(ultimo_id) else int(ultimo_id) + 1
+        # Si no hay registros, asignar 0 como idUsuario, de lo contrario, incrementar el último idUsuario
+        nuevo_id = 0 if pd.isna(ultimo_id) else int(ultimo_id) + 1
 
         # Crear una nueva fila como un diccionario
         nueva_fila = {'idUsuario': nuevo_id, 'nombreApellido': nombre_apellido,

@@ -81,8 +81,6 @@ def visualizar_cargas_combustible():
     # Mostrar el DataFrame de cargas de combustible
     st.dataframe(cargas_combustible_df)
 
-import re
-
 def editar_carga_combustible():
     st.header('Editar Carga de Combustible en Colectivo')
 
@@ -92,9 +90,13 @@ def editar_carga_combustible():
     if id_carga_editar:
 
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
-        csv_file_key = 'cargasCombustible.csv'
-        response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
-        cargas_combustible_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+        try:
+            csv_file_key = 'cargasCombustible.csv'
+            response = s3.get_object(Bucket=bucket_name, Key=csv_file_key)
+            cargas_combustible_df = pd.read_csv(io.BytesIO(response['Body'].read()))
+        except s3.exceptions.NoSuchKey:
+            st.warning("No se encontró el archivo CSV en S3.")
+            return
 
         # Filtrar el DataFrame para obtener la carga específica por idCarga
         carga_editar_df = cargas_combustible_df[cargas_combustible_df['idCarga'] == id_carga_editar]
@@ -121,10 +123,14 @@ def editar_carga_combustible():
                     formato = '%d/%m/%Y' if column == 'fecha' else '%H:%M'
                     nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=valor_actual.strftime(formato) if isinstance(valor_actual, pd.Timestamp) else valor_actual)
                     # Verificar el formato de la fecha o hora ingresada
-                    if not re.match(r'\d{2}/\d{2}/\d{4}', nuevo_valor) and column == 'fecha':
-                        st.warning("Formato incorrecto para fecha. Use el formato DD/MM/AAAA.")
-                    elif not re.match(r'\d{2}:\d{2}', nuevo_valor) and column == 'hora':
-                        st.warning("Formato incorrecto para hora. Use el formato HH:MM.")
+                    if column == 'fecha':
+                        if re.match(r'^\d{2}/\d{2}/\d{4}$', nuevo_valor) is None:
+                            st.warning("Formato incorrecto para fecha. Use el formato DD/MM/AAAA.")
+                            continue
+                    elif column == 'hora':
+                        if re.match(r'^\d{2}:\d{2}$', nuevo_valor) is None:
+                            st.warning("Formato incorrecto para hora. Use el formato HH:MM.")
+                            continue
                 else:
                     nuevo_valor = st.text_input(f"Nuevo valor para {column}", value=str(valor_actual))
 

@@ -36,11 +36,11 @@ def guardar_empleado_en_s3(data, filename):
         except s3.exceptions.NoSuchKey:
             st.warning("No se encontró el archivo CSV en S3")
 
-        # Obtener el ID de la revisión (longitud actual del DataFrame)
-        id_empleado = len(df_total)
+        # Obtener el ID de la revisión (máximo ID existente + 1)
+        id_empleado = df_total['idEmpleado'].max() + 1 if not df_total.empty else 0
 
-        # Crear un diccionario con la información de la carga
-        nueva_carga_empleado = {
+        # Crear un diccionario con la información del empleado
+        nuevo_empleado = {
             'idEmpleado': id_empleado,
             'apellidoNombre': data['apellidoNombre'],
             'cargo': data['cargo'],
@@ -48,7 +48,7 @@ def guardar_empleado_en_s3(data, filename):
         }
 
         # Actualizar el DataFrame con los valores del nuevo registro
-        df_total = pd.concat([df_total, pd.DataFrame([nueva_carga_empleado])], ignore_index=True)
+        df_total = pd.concat([df_total, pd.DataFrame([nuevo_empleado])], ignore_index=True)
 
         # Guardar el DataFrame actualizado en S3
         with io.StringIO() as csv_buffer:

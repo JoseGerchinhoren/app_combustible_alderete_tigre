@@ -87,8 +87,8 @@ def guardar_carga_empresa_en_s3(data, filename, tipo_carga):
         except s3.exceptions.NoSuchKey:
             st.warning("No se encontró el archivo CSV en S3")
 
-        # Obtener el ID de la revisión (longitud actual del DataFrame)
-        id_carga = len(df_total)
+        # Obtener el ID de la carga (máximo ID existente + 1)
+        id_carga = df_total['idCarga'].max() + 1 if not df_total.empty else 0
 
         # Crear un diccionario con la información de la carga
         nueva_carga = {

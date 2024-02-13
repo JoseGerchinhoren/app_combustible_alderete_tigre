@@ -69,8 +69,8 @@ def guardar_stock_tanque_en_s3(data, filename):
             st.warning("No se encontró el archivo CSV en S3. Creando un DataFrame vacío.")
             df_total = pd.DataFrame(columns=['idStockTanque', 'litros', 'fecha', 'hora', 'comentario', 'usuario'])
 
-        # Obtener el ID de la revisión (longitud actual del DataFrame)
-        id_stock_tanque = len(df_total)
+        # Obtener el ID de la carga (máximo ID existente + 1)
+        id_stock_tanque = df_total['id_stock_tanque'].max() + 1 if not df_total.empty else 0
 
         # Crear un diccionario con la información de la carga
         nueva_carga = {
