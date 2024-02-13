@@ -153,7 +153,7 @@ def main():
     # Cargar el DataFrame desde S3
     df_total = cargar_dataframe_desde_s3()
 
-    st.title("Carga de Combustible en Colectivos")
+    st.title("Cargas de Combustible en Colectivos")
 
     usuario = st.session_state.user_nombre_apellido
 

@@ -77,17 +77,17 @@ def main():
         st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Resta de Combustible", "Stock de Tanque", "Choferes e Inspectores","Usuarios"])
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque", "Choferes e Inspectores","Usuarios"])
             if selected_option == "Usuarios":
                 with st.expander('Nuevo Usuario'):
                     ingresa_usuario()
                 with st.expander('Visualiza Usuarios'):
                     visualiza_usuarios()
-            if selected_option == "Carga de Combustible":
+            if selected_option == "Cargas de Combustible":
                 revisionFosa()
             if selected_option == "Stock de Tanque":
                 stockTanque()
-            if selected_option == "Resta de Combustible":
+            if selected_option == "Restas de Combustible":
                 stockColectivos()
             if selected_option == "Choferes e Inspectores":
                 ingresaInspectoresYChoferes()
@@ -96,12 +96,12 @@ def main():
             #     texto_inicio()            
 
         elif user_rol == "empleado":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Carga de Combustible", "Resta de Combustible", "Stock de Tanque"])
-            if selected_option == "Carga de Combustible":
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque"])
+            if selected_option == "Cargas de Combustible":
                 revisionFosa()
             if selected_option == "Stock de Tanque":
                 stockTanque()
-            if selected_option == "Resta de Combustible":
+            if selected_option == "Restas de Combustible":
                 stockColectivos()
 
         elif user_rol == "inspector":

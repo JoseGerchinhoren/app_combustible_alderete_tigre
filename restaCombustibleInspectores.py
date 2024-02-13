@@ -334,7 +334,7 @@ def eliminar_resta_combustible():
         st.error('Ingrese el idResta para eliminar la resta')
     
 def main():
-    st.title('Resta de Combustible en Colectivos')
+    st.title('Restas de Combustible en Colectivos')
     with st.expander('Restar Combustible en Colectivo'): restaCombustibleCoche()
 
     with st.expander('Visualizar Restas de Combustible en Colectivos'): 
