@@ -43,7 +43,7 @@ def editar_usuario():
     # Campo para ingresar el idUsuario del usuario que se desea editar
     id_usuario_editar = st.text_input("Ingrese el idUsuario del usuario que desea editar:")
 
-    if id_usuario_editar:
+    if id_usuario_editar is not None:
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
         csv_file_key = 'usuarios_combustible.csv'
         try:
@@ -105,7 +105,7 @@ def eliminar_usuario():
     # Ingresar el idUsuario del usuario a eliminar
     id_usuario_eliminar = st.number_input('Ingrese el idUsuario del usuario a eliminar', value=None, min_value=0)
 
-    if id_usuario_eliminar:
+    if id_usuario_eliminar is not None:
         st.error(f'¿Está seguro de eliminar al usuario con idUsuario {id_usuario_eliminar}?')
 
         if st.button('Eliminar Usuario'):

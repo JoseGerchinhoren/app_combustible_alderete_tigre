@@ -169,7 +169,7 @@ def editar_carga_tanque():
     # Ingresar el idStockTanque a editar
     id_stock_editar = st.number_input('Ingrese el idStockTanque a editar', value=None, min_value=0)
 
-    if id_stock_editar:
+    if id_stock_editar is not None:
 
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
         try:
@@ -282,7 +282,7 @@ def eliminar_carga_combustible():
     # Ingresar el idStockTanque a eliminar
     id_stock_eliminar = st.number_input('Ingrese el idStockTanque a eliminar', value=None, min_value=0)
 
-    if id_stock_eliminar:
+    if id_stock_eliminar is not None:
         st.error(f'¿Está seguro de eliminar la carga de combustible con idStockTanque {id_stock_eliminar}?')
 
         if st.button('Eliminar Carga'):

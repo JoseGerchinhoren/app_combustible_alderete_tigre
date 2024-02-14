@@ -46,7 +46,7 @@ def editar_chofer():
     # Ingresar el idEmpleado a editar
     id_chofer_editar = st.number_input('Ingrese el idEmpleado a editar', value=None, min_value=0)
 
-    if id_chofer_editar:
+    if id_chofer_editar is not None:
 
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
         try:
@@ -121,7 +121,7 @@ def eliminar_chofer():
     # Ingresar el idEmpleado del chofer a eliminar
     id_chofer_eliminar = st.number_input('Ingrese el idEmpleado del chofer a eliminar', value=None, min_value=0)
 
-    if id_chofer_eliminar:
+    if id_chofer_eliminar is not None:
         st.error(f'¿Está seguro de eliminar al chofer con idEmpleado {id_chofer_eliminar}?')
 
         if st.button('Eliminar Chofer'):

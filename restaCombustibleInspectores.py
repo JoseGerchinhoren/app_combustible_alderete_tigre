@@ -219,7 +219,7 @@ def editar_resta_combustible():
     # Ingresar el idResta a editar
     id_resta_editar = st.number_input('Ingrese el idResta a editar', value=None, min_value=0)
 
-    if id_resta_editar:
+    if id_resta_editar is not None:  # Cambio en la condición
 
         # Descargar el archivo CSV desde S3 y cargarlo en un DataFrame
         try:
@@ -302,7 +302,7 @@ def eliminar_resta_combustible():
     # Ingresar el idResta a eliminar
     id_resta_eliminar = st.number_input('Ingrese el idResta a eliminar', value=None, min_value=0)
 
-    if id_resta_eliminar:
+    if id_resta_eliminar is not None:  # Cambio en la condición
         st.error(f'¿Está seguro de eliminar la resta de combustible con idResta {id_resta_eliminar}?')
 
         if st.button('Eliminar Resta'):
