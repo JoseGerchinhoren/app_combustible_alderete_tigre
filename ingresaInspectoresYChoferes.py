@@ -65,8 +65,8 @@ def guardar_empleado_en_s3(data, filename):
 
 def main():
     # Utilizando st.expander para la sección "Carga en Surtidor"
-    with st.expander('Ingresa Chofer'):
-        st.title("Ingresa Chofer")
+    with st.expander('Ingresar Chofer'):
+        st.title("Ingresar Chofer")
 
         apellidoNombreChofer = st.text_input('Ingrese el Apellido y Nombres del Chofer')
 
@@ -82,8 +82,8 @@ def main():
             guardar_empleado_en_s3(data_empleado_chofer, csv_filename)
 
     # Utilizando st.expander para la sección "Carga en Surtidor"
-    with st.expander('Ingresa Inspector'):
-        st.title("Ingresa Inspector")
+    with st.expander('Ingresar Inspector'):
+        st.title("Ingresar Inspector")
 
         apellidoNombreInspector = st.text_input('Ingrese el Apellido y Nombres del Inspector')
 
@@ -98,7 +98,7 @@ def main():
             }
             guardar_empleado_en_s3(data_empleado_inspector, csv_filename)
 
-    with st.expander('Visualiza Choferes e Inspectores'):
+    with st.expander('Visualizar Choferes e Inspectores'):
         visualizar_empleados()
     
 def validar_campos_surtidor(coche, numero_precinto_viejo, litros_cargados, precio, numero_precinto_nuevo):

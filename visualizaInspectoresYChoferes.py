@@ -15,7 +15,7 @@ s3 = boto3.client('s3', aws_access_key_id=aws_access_key, aws_secret_access_key=
 csv_filename = "inspectoresChoferes.csv"
 
 def visualizar_cargas_emplados():
-    st.title("Visualizar Cargas de Combustible")
+    st.title("Visualizar Choferes e Inspectores")
 
     # Cargar el archivo cargasCombustible.csv desde S3
     s3_csv_key_cargas_combustible = csv_filename

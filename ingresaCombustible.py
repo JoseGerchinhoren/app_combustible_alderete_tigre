@@ -175,7 +175,7 @@ def main():
         st.info("Todos los colectivos tienen al menos 100 litros.")
         
     # Utilizando st.expander para la sección "Carga en Surtidor"
-    with st.expander('Carga en Surtidor'):
+    with st.expander('Cargar en Surtidor'):
         coche_surtidor = st.selectbox("Seleccione número de coche:", numeros_colectivos)
 
         # Obtén el último número de precinto nuevo para el coche seleccionado
@@ -222,7 +222,7 @@ def main():
                 st.rerun()
 
     # Utilizando st.expander para la sección "Carga en Tanque"
-    with st.expander('Carga en Tanque'):
+    with st.expander('Cargar en Tanque'):
         st.info(f"{current_litros} Litros en Tanque de Empresa")
 
         coche_tanque = st.selectbox("Seleccione número de coche: ", numeros_colectivos)
@@ -293,11 +293,11 @@ def main():
                 st.rerun()
 
     # Utilizando st.expander para la sección "Visualiza Cantidad de Combustible en Colectivos"
-    with st.expander('Visualiza Cantidad de Combustible en Colectivos'):
+    with st.expander('Visualizar Cantidad de Combustible en Colectivos'):
         visualizar_litros_colectivos()
 
     # Utilizando st.expander para la sección "Visualiza Cargas de Combustible"
-    with st.expander('Visualiza Cargas de Combustible'):
+    with st.expander('Visualizar Cargas de Combustible'):
         visualizaCombustible()
     
 def validar_campos_surtidor(coche, numero_precinto_viejo, litros_cargados, precio, numero_precinto_nuevo):

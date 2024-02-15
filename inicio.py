@@ -79,9 +79,9 @@ def main():
         if user_rol == "admin":
             selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque", "Choferes e Inspectores","Usuarios"])
             if selected_option == "Usuarios":
-                with st.expander('Nuevo Usuario'):
+                with st.expander('Ingresar Usuario'):
                     ingresa_usuario()
-                with st.expander('Visualiza Usuarios'):
+                with st.expander('Visualizar Usuarios'):
                     visualiza_usuarios()
             if selected_option == "Cargas de Combustible":
                 revisionFosa()

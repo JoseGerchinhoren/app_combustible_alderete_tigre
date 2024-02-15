@@ -97,7 +97,7 @@ def restaCombustibleCoche():
     }
 
     # Botón para realizar acciones asociadas a "Carga en Tanque"
-    if st.button('Guardar Carga de Combustible en Tanque'):
+    if st.button('Guardar Resta de Combustible'):
         guardar_carga_empresa_en_s3(data, csv_filename)
         
 def guardar_carga_empresa_en_s3(data, filename):
