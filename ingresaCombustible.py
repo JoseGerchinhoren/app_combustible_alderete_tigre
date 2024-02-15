@@ -173,7 +173,7 @@ def main():
         st.info(mensaje_colectivos_bajos_litros)
     else:
         st.info("Todos los colectivos tienen al menos 100 litros.")
-        
+
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Cargar en Surtidor'):
         coche_surtidor = st.selectbox("Seleccione número de coche:", numeros_colectivos)
@@ -235,12 +235,11 @@ def main():
 
         contadorLitrosInicio = st.number_input('Contador Inicio', min_value=0, value=obtener_contador_tanque_s3(), step=1)
 
-        litrosCargados = st.number_input('Ingrese la cantidad de litros cargados ', min_value=0, value=None, step=1)
+        contadorLitrosCierre = st.number_input('Contador Final', min_value=0, value=obtener_contador_tanque_s3(), step=1)
 
-        # Calcular la cantidad final de litros sumando la cantidad cargada al contador actual
-        contadorLitrosCierre = contadorLitrosInicio + (litrosCargados or 0)
+        litrosCargados = contadorLitrosCierre - contadorLitrosInicio
 
-        st.write(f"Contador Final: {contadorLitrosCierre}")
+        st.subheader(f"Litros Cargados: {litrosCargados}")
 
         numeroPrecintoNuevo = st.number_input('Ingrese el numero de precinto nuevo ', min_value=0, value=None, step=1)
         observacion = st.text_input('Ingrese una observacion, si se desea ')
