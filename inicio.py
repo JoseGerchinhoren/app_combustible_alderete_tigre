@@ -10,6 +10,7 @@ from visualizaUsuarios import main as visualiza_usuarios
 from stockTanque import main as stockTanque
 from restaCombustibleInspectores import main as stockColectivos
 from ingresaInspectoresYChoferes import main as ingresaInspectoresYChoferes
+from visualizaMovimientos import main as visualizaMovimientos
 
 # Obtener credenciales
 aws_access_key, aws_secret_key, region_name, bucket_name = cargar_configuracion()
@@ -77,7 +78,7 @@ def main():
         st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque", "Choferes e Inspectores","Usuarios"])
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque", "Movimientos de Combustible", "Choferes e Inspectores","Usuarios"])
             if selected_option == "Usuarios":
                 with st.expander('Ingresar Usuario'):
                     ingresa_usuario()
@@ -91,18 +92,22 @@ def main():
                 stockColectivos()
             if selected_option == "Choferes e Inspectores":
                 ingresaInspectoresYChoferes()
+            if selected_option == "Movimientos de Combustible":
+                visualizaMovimientos()
             
             # if selected_option == "Inicio":
             #     texto_inicio()            
 
         elif user_rol == "empleado":
-            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque"])
+            selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque", "Movimientos de Combustible"])
             if selected_option == "Cargas de Combustible":
                 revisionFosa()
             if selected_option == "Stock de Tanque":
                 stockTanque()
             if selected_option == "Restas de Combustible":
                 stockColectivos()
+            if selected_option == "Movimientos de Combustible":
+                visualizaMovimientos()
 
         elif user_rol == "inspector":
             stockColectivos()
