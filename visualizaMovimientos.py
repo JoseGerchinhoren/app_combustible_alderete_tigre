@@ -21,7 +21,7 @@ def formatear_fecha(x):
         return ''
 
 def visualizar_movimientos():
-    st.title("Visualizar Movimientos de Combustible")
+    st.title("Movimientos de Combustible")
 
     # Obtener datos de los archivos desde S3
     try:
@@ -42,6 +42,16 @@ def visualizar_movimientos():
     except s3.exceptions.NoSuchKey:
         st.warning("No se encontró el archivo stock_tanque.csv en S3")
 
+    # Renombrar la columna de litros en cada DataFrame según corresponda
+    cargas_combustible_df.rename(columns={'litrosCargados': 'litros'}, inplace=True)
+    resta_combustible_df.rename(columns={'litrosRestados': 'litros'}, inplace=True)
+
+    # Reemplazar comas por puntos en columnas numéricas
+    numeric_columns = ['litros']  # Solo necesitamos reemplazar comas en la columna 'litros'
+    for column in numeric_columns:
+        cargas_combustible_df[column] = cargas_combustible_df[column].astype(str).str.replace(',', '.', regex=False)
+        resta_combustible_df[column] = resta_combustible_df[column].astype(str).str.replace(',', '.', regex=False)
+
     # Agregar columna 'tipo' a cada DataFrame
     cargas_combustible_df['tipo'] = 'Carga en Colectivo'
     resta_combustible_df['tipo'] = 'Resta en Colectivo'
@@ -59,9 +69,41 @@ def visualizar_movimientos():
 
     # Filtrar por coche o tanque
     coches_tanques = movimientos_df['coche'].unique()
-    coche_tanque_filtrado = st.selectbox("Filtrar por Coche/Tanque", ['Todos'] + list(coches_tanques))
+
+    # Verificar si hay valores NaN antes de convertir los números de coche a enteros
+    if not movimientos_df['coche'].isnull().all():
+        # Convertir los números de coche a enteros, y los valores vacíos a 0
+        coches_tanques = [int(coche) if pd.notnull(coche) else 0 for coche in coches_tanques]
+
+        # Ordenar los números de coche en orden descendente
+        coches_tanques.sort(reverse=True)
+
+    coche_tanque_filtrado = st.selectbox("Filtrar por Coche/Tanque", ['Todos'] + coches_tanques)
+
     if coche_tanque_filtrado != 'Todos':
+        # Convertir el valor seleccionado del selectbox a entero
+        coche_tanque_filtrado = int(coche_tanque_filtrado)
         movimientos_df = movimientos_df[movimientos_df['coche'] == coche_tanque_filtrado]
+
+    # Filtrar por tipo
+    tipos = movimientos_df['tipo'].unique()
+    tipo_filtrado = st.selectbox("Filtrar por Tipo", ['Todos'] + list(tipos))
+    if tipo_filtrado != 'Todos':
+        movimientos_df = movimientos_df[movimientos_df['tipo'] == tipo_filtrado]
+
+    # Filtrar por usuario
+    usuarios = movimientos_df['usuario'].unique()
+    usuario_filtrado = st.selectbox("Filtrar por Usuario", ['Todos'] + list(usuarios))
+    if usuario_filtrado != 'Todos':
+        movimientos_df = movimientos_df[movimientos_df['usuario'] == usuario_filtrado]
+
+    # Convertir la columna 'coche' a tipo int (si es necesario)
+    if 'coche' in movimientos_df.columns:
+        movimientos_df['coche'] = movimientos_df['coche'].fillna(0).astype(int)
+
+    # Convertir la columna 'litros' a tipo int (si es necesario)
+    if 'litros' in movimientos_df.columns:
+        movimientos_df['litros'] = pd.to_numeric(movimientos_df['litros'].astype(str).str.replace(',', ''), errors='coerce').fillna(0).astype(int)
 
     # Mostrar DataFrame
     st.write(movimientos_df[['tipo', 'fecha', 'hora', 'coche', 'litros', 'usuario']].applymap(formatear_fecha))

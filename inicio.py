@@ -70,12 +70,12 @@ def logout():
 
 def main():
     st.title("T.A. Ciudad de Alderetes - T.A. El Tigre")
-    st.header("Control de Combustible")
+    st.title("Control de Combustible")
 
     if logged_in:
         st.sidebar.title("Menú")
 
-        st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
+        # st.subheader(f"Bienvenido/a, {user_nombre_apellido}!")
 
         if user_rol == "admin":
             selected_option = st.sidebar.selectbox("Seleccione una opción:", ["Cargas de Combustible", "Restas de Combustible", "Stock de Tanque", "Movimientos de Combustible", "Choferes e Inspectores","Usuarios"])
