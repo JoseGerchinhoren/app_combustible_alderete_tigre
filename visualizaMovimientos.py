@@ -76,11 +76,11 @@ def visualizar_movimientos():
         coches_tanques = [int(coche) if pd.notnull(coche) else 0 for coche in coches_tanques]
 
         # Ordenar los números de coche en orden descendente
-        coches_tanques.sort(reverse=True)
+        coches_tanques.sort()
 
-    coche_tanque_filtrado = st.selectbox("Filtrar por Coche/Tanque", ['Todos'] + coches_tanques)
+    coche_tanque_filtrado = st.selectbox("Filtrar por Coche/Tanque", ['Todos'] + coches_tanques if coches_tanques else ['Todos'])
 
-    if coche_tanque_filtrado != 'Todos':
+    if coche_tanque_filtrado != 'Todos' and coche_tanque_filtrado is not None:
         # Convertir el valor seleccionado del selectbox a entero
         coche_tanque_filtrado = int(coche_tanque_filtrado)
         movimientos_df = movimientos_df[movimientos_df['coche'] == coche_tanque_filtrado]

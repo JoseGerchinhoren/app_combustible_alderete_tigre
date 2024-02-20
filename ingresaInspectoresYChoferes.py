@@ -64,6 +64,7 @@ def guardar_empleado_en_s3(data, filename):
         st.error(f"Error al guardar la información: {e}")
 
 def main():
+    st.title('Choferes e Inspectores')
     # Utilizando st.expander para la sección "Carga en Surtidor"
     with st.expander('Ingresar Chofer'):
         st.title("Ingresar Chofer")

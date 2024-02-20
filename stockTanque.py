@@ -332,6 +332,7 @@ def eliminar_carga_combustible():
         st.error('Ingrese el idStockTanque para eliminar la carga')
 
 def main():
+    st.title('Stock de Tanque')
     # Expansor para ingresar stock en litros para el tanque
     with st.expander('Ingresar Carga en Tanque'):
         ingresaStockTanque()
