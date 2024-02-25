@@ -24,10 +24,10 @@ La aplicación cuenta con un sistema de inicio de sesión que permite a los usua
 <img src="img\cargas de combustible en colectivos\Carga en tanque 2.PNG" alt="Carga en tanque 2" width="100%">
 
 - **Visualiza litros de combustible en cada colectivo:** Dataframe para visualizar litros en cada colectivo y su estado, con opción para editar la información del colectivo.
-<img src="img\cargas de combustible en colectivos\cargas de combustible.PNG" alt="Login" width="100%">
+<img src="img\cargas de combustible en colectivos\litros de combustible en colectivos.PNG" alt="litros de combustible en colectivos" width="100%">
 
 - **Visualiza cargas de combustible en colectivos:** Dataframe para visualizar la información de las cargas de combustible, permite visualizar las cargas de combustible con filtros por número de colectivo, lugar de carga y fecha, con opciones para editar o eliminar una carga de combustible en un colectivo.
-<img src="img\cargas de combustible en colectivos\cargas de combustible.PNG" alt="Login" width="100%">
+<img src="img\cargas de combustible en colectivos\visualiza cargas de combustible 1.PNG" alt="visualiza cargas de combustible 1" width="100%">
 
 ### Restas de Combustible en Colectivos
 - **Registro de Restas de Combustible en Colectivo:** Permite guardar información de restas de litros de combustible en colectivos. Funcion para inspectores.
